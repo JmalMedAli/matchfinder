@@ -14,6 +14,15 @@ import type { FootballField } from "@/types/football-field";
 import { Calendar, Clock, Users, FileText } from "lucide-react";
 import { motion } from "framer-motion";
 
+const cardVariants = {
+  hidden: { opacity: 0, y: 16 },
+  visible: (i: number) => ({
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.4, delay: i * 0.1, ease: [0.25, 0.46, 0.45, 0.94] as const },
+  }),
+};
+
 export function MatchForm({ mode = "create" }: { mode?: "create" }) {
   const router = useRouter();
   const createMatch = useCreateMatch();
@@ -58,15 +67,6 @@ export function MatchForm({ mode = "create" }: { mode?: "create" }) {
   }
 
   const isFormValid = title && date && time && field && maxPlayers;
-
-  const cardVariants = {
-    hidden: { opacity: 0, y: 16 },
-    visible: (i: number) => ({
-      opacity: 1,
-      y: 0,
-      transition: { duration: 0.4, delay: i * 0.1, ease: [0.25, 0.46, 0.45, 0.94] as const },
-    }),
-  };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6 max-w-lg">

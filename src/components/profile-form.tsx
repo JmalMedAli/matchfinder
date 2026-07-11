@@ -15,6 +15,15 @@ import { toast } from "sonner";
 import { Camera, Save, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
 
+const cardVariants = {
+  hidden: { opacity: 0, y: 16 },
+  visible: (i: number) => ({
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.4, delay: i * 0.1, ease: [0.25, 0.46, 0.45, 0.94] as const },
+  }),
+};
+
 export function ProfileForm() {
   const { data: profile, isPending } = useProfile();
   const updateProfile = useUpdateProfile();
@@ -106,15 +115,6 @@ export function ProfileForm() {
     .join("")
     .toUpperCase()
     .slice(0, 2);
-
-  const cardVariants = {
-    hidden: { opacity: 0, y: 16 },
-    visible: (i: number) => ({
-      opacity: 1,
-      y: 0,
-      transition: { duration: 0.4, delay: i * 0.1, ease: [0.25, 0.46, 0.45, 0.94] as const },
-    }),
-  };
 
   return (
     <div className="space-y-6 max-w-lg">

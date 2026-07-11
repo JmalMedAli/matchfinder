@@ -32,15 +32,16 @@ export function BottomNav() {
             <Link
               key={item.href}
               href={item.href}
-              className="flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl min-w-[48px] relative"
-            >
-              {active && (
-                <motion.div
-                  className="absolute inset-0 bg-primary/10 rounded-xl"
-                  layoutId="bottomNavActive"
-                  transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                />
+              className={cn(
+                "flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl min-w-[48px] relative transition-all duration-200",
               )}
+            >
+              <div
+                className={cn(
+                  "absolute inset-0 rounded-xl transition-all duration-200",
+                  active ? "bg-primary/10" : "bg-transparent",
+                )}
+              />
               <motion.div
                 className="relative z-10"
                 whileTap={isCreate ? { scale: 0.85 } : { scale: 0.9 }}
@@ -48,7 +49,7 @@ export function BottomNav() {
               >
                 <Icon
                   className={cn(
-                    "h-5 w-5 transition-colors",
+                    "h-5 w-5 transition-colors duration-200",
                     active
                       ? "text-primary"
                       : "text-muted-foreground",
@@ -58,7 +59,7 @@ export function BottomNav() {
               </motion.div>
               <span
                 className={cn(
-                  "text-[10px] leading-tight relative z-10 transition-colors",
+                  "text-[10px] leading-tight relative z-10 transition-colors duration-200",
                   active ? "text-primary font-semibold" : "text-muted-foreground font-medium",
                 )}
               >
