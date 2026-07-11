@@ -15,21 +15,26 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
-import { MapPin, ExternalLink, Phone, MessageCircle, Globe } from "lucide-react";
+import {
+  MapPin, ExternalLink, Phone, MessageCircle, Globe,
+  Calendar, Clock, Users, ArrowLeft, Pencil, Trash2,
+  CheckCircle, XCircle, Hourglass
+} from "lucide-react";
 import { filterPublicProfile } from "@/types/profile";
 import type { MatchOrganizer } from "@/hooks/use-matches";
+import { motion } from "framer-motion";
 
-const statusVariant: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
-  OPEN: "default",
-  FULL: "secondary",
-  CLOSED: "destructive",
-  COMPLETED: "outline",
+const statusConfig: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
+  OPEN: { label: "Open", variant: "default" },
+  FULL: { label: "Full", variant: "secondary" },
+  CLOSED: { label: "Closed", variant: "destructive" },
+  COMPLETED: { label: "Completed", variant: "outline" },
 };
 
-const requestStatusVariant: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
-  PENDING: "secondary",
-  ACCEPTED: "default",
-  REJECTED: "destructive",
+const requestStatusConfig: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline"; icon: typeof CheckCircle }> = {
+  PENDING: { label: "Pending", variant: "secondary", icon: Hourglass },
+  ACCEPTED: { label: "Accepted", variant: "default", icon: CheckCircle },
+  REJECTED: { label: "Rejected", variant: "destructive", icon: XCircle },
 };
 
 export default function MatchDetailPage({
@@ -67,9 +72,10 @@ export default function MatchDetailPage({
 
   if (isPending) {
     return (
-      <div className="space-y-4">
+      <div className="space-y-4 max-w-2xl">
         <Skeleton className="h-8 w-48" />
-        <Skeleton className="h-64 rounded-lg" />
+        <Skeleton className="h-64 rounded-2xl" />
+        <Skeleton className="h-32 rounded-2xl" />
       </div>
     );
   }
@@ -80,8 +86,10 @@ export default function MatchDetailPage({
 
   const isOrganizer = userId === match.organizer_id;
   const acceptedCount = (match.join_requests ?? []).filter((r: any) => r.status === "ACCEPTED").length;
+  const spotsLeft = match.max_players - acceptedCount;
   const myRequest = myRequests?.find((r) => r.match_id === id);
   const date = new Date(match.date);
+  const status = statusConfig[match.status] ?? { label: match.status, variant: "outline" as const };
 
   function handleDelete() {
     if (!confirm("Delete this match?")) return;
@@ -130,46 +138,108 @@ export default function MatchDetailPage({
 
   return (
     <div className="space-y-6 max-w-2xl">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold">{match.title}</h1>
-          <div className="flex items-center gap-2 mt-1">
-            <Badge variant={statusVariant[match.status]}>{match.status}</Badge>
-            <span className="text-sm text-muted-foreground">
-              {acceptedCount}/{match.max_players} players
-            </span>
+      <motion.div
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+      >
+        <Link href="/dashboard/matches" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mb-4">
+          <ArrowLeft className="h-4 w-4" />
+          Back to matches
+        </Link>
+      </motion.div>
+
+      <motion.div
+        className="relative rounded-2xl overflow-hidden"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.05 }}
+      >
+        <video
+          className="absolute inset-0 h-full w-full object-cover"
+          autoPlay
+          muted
+          loop
+          playsInline
+          preload="metadata"
+        >
+          <source src="/hero-video.mp4" type="video/mp4" />
+        </video>
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-black/20" />
+
+        <div className="relative z-10 p-6 pb-5">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h1 className="text-2xl md:text-3xl font-bold font-[family-name:var(--font-barlow-condensed)] text-white">
+                {match.title}
+              </h1>
+              <div className="flex items-center gap-2 mt-2">
+                <Badge variant={status.variant}>{status.label}</Badge>
+                <span className="text-sm text-white/70 flex items-center gap-1">
+                  <Users className="h-3.5 w-3.5" />
+                  {acceptedCount}/{match.max_players} players
+                  {spotsLeft > 0 && match.status === "OPEN" && (
+                    <span className="text-primary font-medium"> · {spotsLeft} spot{spotsLeft > 1 ? "s" : ""} left</span>
+                  )}
+                </span>
+              </div>
+            </div>
+            {isOrganizer && (
+              <div className="flex gap-2">
+                <Link href={`/dashboard/matches/${id}/edit`}>
+                  <Button variant="outline" size="sm" className="gap-1.5 bg-white/10 text-white border-white/20 hover:bg-white/20 backdrop-blur-sm">
+                    <Pencil className="h-3.5 w-3.5" />
+                    Edit
+                  </Button>
+                </Link>
+                <Button variant="destructive" size="sm" className="gap-1.5" onClick={handleDelete} disabled={deleteMatch.isPending}>
+                  <Trash2 className="h-3.5 w-3.5" />
+                  Delete
+                </Button>
+              </div>
+            )}
           </div>
         </div>
-        {isOrganizer && (
-          <div className="flex gap-2">
-            <Link href={`/dashboard/matches/${id}/edit`}>
-              <Button variant="outline" size="sm">Edit</Button>
-            </Link>
-            <Button variant="destructive" size="sm" onClick={handleDelete} disabled={deleteMatch.isPending}>
-              Delete
-            </Button>
-          </div>
-        )}
-      </div>
+      </motion.div>
 
-      <Card>
-        <CardContent className="space-y-3 py-4 text-sm">
-          <div>
-            <p className="text-muted-foreground">Date & time</p>
-            <p>{date.toLocaleDateString()} at {date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</p>
-          </div>
-          {field ? (
-            <div>
-              <p className="text-muted-foreground mb-2">Location</p>
-              <div className="rounded-lg border bg-muted/30 p-3 space-y-2">
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, delay: 0.1 }}
+      >
+        <Card>
+          <CardContent className="p-5 space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                  <Calendar className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Date</p>
+                  <p className="font-medium">{date.toLocaleDateString()}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                  <Clock className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Time</p>
+                  <p className="font-medium">{date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</p>
+                </div>
+              </div>
+            </div>
+
+            {field ? (
+              <div className="rounded-xl border bg-muted/30 p-4 space-y-2">
                 <div className="flex items-start gap-3">
-                  <MapPin className="h-4 w-4 mt-0.5 shrink-0 text-muted-foreground" />
+                  <MapPin className="h-5 w-5 mt-0.5 shrink-0 text-primary" />
                   <div className="flex-1 min-w-0">
                     <p className="font-medium">{field.name}</p>
                     {field.address && (
-                      <p className="text-xs text-muted-foreground">{field.address}</p>
+                      <p className="text-sm text-muted-foreground">{field.address}</p>
                     )}
-                    <p className="text-xs text-muted-foreground">{field.city}</p>
+                    <p className="text-sm text-muted-foreground">{field.city}</p>
                   </div>
                 </div>
                 {field.latitude && field.longitude && (
@@ -177,65 +247,100 @@ export default function MatchDetailPage({
                     href={`https://www.google.com/maps?q=${field.latitude},${field.longitude}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 text-xs text-primary hover:underline"
+                    className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline"
                   >
-                    <ExternalLink className="h-3 w-3" />
+                    <ExternalLink className="h-3.5 w-3.5" />
                     Open in Google Maps
                   </a>
                 )}
               </div>
-            </div>
-          ) : (
-            <div>
-              <p className="text-muted-foreground">Location</p>
-              <p>{match.location}</p>
-            </div>
-          )}
-          {match.description && (
-            <div>
-              <p className="text-muted-foreground">Description</p>
-              <p>{match.description}</p>
-            </div>
-          )}
-          <div>
-            <p className="text-muted-foreground">Organized by</p>
-            <p>{match.profiles?.name ?? "Unknown"}</p>
-            {match.profiles?.position && (
-              <p className="text-xs text-muted-foreground">{match.profiles.position}</p>
+            ) : (
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                  <MapPin className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Location</p>
+                  <p className="font-medium">{match.location}</p>
+                </div>
+              </div>
             )}
-          </div>
-          <OrganizerContact profiles={match.profiles} viewerId={userId} />
-        </CardContent>
-      </Card>
+
+            {match.description && (
+              <div>
+                <p className="text-xs text-muted-foreground mb-1">Description</p>
+                <p className="text-sm">{match.description}</p>
+              </div>
+            )}
+
+            <Separator />
+
+            <div>
+              <p className="text-xs text-muted-foreground mb-2">Organized by</p>
+              <div className="flex items-center gap-3">
+                <Avatar className="h-8 w-8">
+                  <AvatarImage src={match.profiles?.image ?? undefined} />
+                  <AvatarFallback>{match.profiles?.name?.[0] ?? "?"}</AvatarFallback>
+                </Avatar>
+                <div>
+                  <p className="font-medium text-sm">{match.profiles?.name ?? "Unknown"}</p>
+                  {match.profiles?.position && (
+                    <p className="text-xs text-muted-foreground">{match.profiles.position}</p>
+                  )}
+                </div>
+              </div>
+              <OrganizerContact profiles={match.profiles} viewerId={userId} />
+            </div>
+          </CardContent>
+        </Card>
+      </motion.div>
 
       {!isOrganizer && match.status === "OPEN" && (
-        <div>
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, delay: 0.15 }}
+        >
           {myRequest?.status === "PENDING" ? (
             <div className="flex items-center gap-3">
-              <Badge variant="secondary">Request pending</Badge>
+              <Badge variant="secondary" className="gap-1.5">
+                <Hourglass className="h-3 w-3" />
+                Request pending
+              </Badge>
               <Button variant="outline" size="sm" onClick={() => handleWithdraw(myRequest.id)} disabled={withdrawRequest.isPending}>
                 Withdraw
               </Button>
             </div>
           ) : myRequest?.status === "ACCEPTED" ? (
-            <Badge>You are accepted</Badge>
+            <Badge className="gap-1.5">
+              <CheckCircle className="h-3 w-3" />
+              You are accepted
+            </Badge>
           ) : myRequest?.status === "REJECTED" ? (
             <div className="flex items-center gap-3">
-              <Badge variant="destructive">Request rejected</Badge>
+              <Badge variant="destructive" className="gap-1.5">
+                <XCircle className="h-3 w-3" />
+                Request rejected
+              </Badge>
               <Button size="sm" onClick={handleJoin} disabled={joinRequest.isPending}>
                 {joinRequest.isPending ? "Requesting..." : "Request again"}
               </Button>
             </div>
           ) : (
-            <Button onClick={handleJoin} disabled={joinRequest.isPending}>
+            <Button onClick={handleJoin} disabled={joinRequest.isPending} className="gap-2">
               {joinRequest.isPending ? "Sending..." : "Request to join"}
             </Button>
           )}
-        </div>
+        </motion.div>
       )}
 
       {isOrganizer && (
-        <div className="flex gap-2 flex-wrap">
+        <motion.div
+          className="flex gap-2 flex-wrap"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, delay: 0.15 }}
+        >
           {match.status === "OPEN" && (
             <Button size="sm" variant="outline" onClick={() => handleStatusChange("CLOSED")}>Close registration</Button>
           )}
@@ -245,46 +350,57 @@ export default function MatchDetailPage({
           {match.status !== "COMPLETED" && (
             <Button size="sm" variant="outline" onClick={() => handleStatusChange("COMPLETED")}>Mark completed</Button>
           )}
-        </div>
+        </motion.div>
       )}
 
       {isOrganizer && (match.join_requests?.length ?? 0) > 0 && (
-        <>
-          <Separator />
-          <h2 className="text-lg font-semibold">Join Requests</h2>
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, delay: 0.2 }}
+        >
+          <Separator className="mb-6" />
+          <h2 className="text-lg font-semibold font-[family-name:var(--font-barlow-condensed)] mb-4">
+            Join Requests
+          </h2>
           <div className="space-y-3">
-            {match.join_requests.map((req: any) => (
-              <Card key={req.id}>
-                <CardContent className="py-3 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <Avatar className="h-8 w-8">
-                        <AvatarImage src={req.profiles?.image ?? undefined} />
-                        <AvatarFallback>{req.profiles?.name?.[0] ?? "?"}</AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <p className="text-sm font-medium">{req.profiles?.name ?? "Unknown"}</p>
-                        {req.profiles?.position && (
-                          <p className="text-xs text-muted-foreground">{req.profiles.position}</p>
-                        )}
-                        <Badge variant={requestStatusVariant[req.status]} className="text-xs">
-                          {req.status}
-                        </Badge>
+            {match.join_requests.map((req: any) => {
+              const reqStatus = requestStatusConfig[req.status] ?? { label: req.status, variant: "outline" as const, icon: Hourglass };
+              const ReqIcon = reqStatus.icon;
+              return (
+                <Card key={req.id}>
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <Avatar className="h-9 w-9">
+                          <AvatarImage src={req.profiles?.image ?? undefined} />
+                          <AvatarFallback>{req.profiles?.name?.[0] ?? "?"}</AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <p className="font-medium text-sm">{req.profiles?.name ?? "Unknown"}</p>
+                          {req.profiles?.position && (
+                            <p className="text-xs text-muted-foreground">{req.profiles.position}</p>
+                          )}
+                          <Badge variant={reqStatus.variant} className="text-xs mt-1 gap-1">
+                            <ReqIcon className="h-3 w-3" />
+                            {reqStatus.label}
+                          </Badge>
+                        </div>
                       </div>
+                      {req.status === "PENDING" && (
+                        <div className="flex gap-2">
+                          <Button size="sm" onClick={() => handleRequestAction(req.id, "ACCEPTED")}>Accept</Button>
+                          <Button size="sm" variant="destructive" onClick={() => handleRequestAction(req.id, "REJECTED")}>Reject</Button>
+                        </div>
+                      )}
                     </div>
-                    {req.status === "PENDING" && (
-                      <div className="flex gap-2">
-                        <Button size="sm" onClick={() => handleRequestAction(req.id, "ACCEPTED")}>Accept</Button>
-                        <Button size="sm" variant="destructive" onClick={() => handleRequestAction(req.id, "REJECTED")}>Reject</Button>
-                      </div>
-                    )}
-                  </div>
-                  <RequestContact profiles={req.profiles} viewerId={userId} />
-                </CardContent>
-              </Card>
-            ))}
+                    <RequestContact profiles={req.profiles} viewerId={userId} />
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
-        </>
+        </motion.div>
       )}
     </div>
   );
@@ -328,7 +444,7 @@ function ContactLinks({
   if (items.length === 0) return null;
 
   return (
-    <div className="flex flex-wrap gap-2 pt-1">
+    <div className="flex flex-wrap gap-2 mt-3">
       {items.map((item) => {
         const Icon = item.icon;
         return (
@@ -337,7 +453,7 @@ function ContactLinks({
             href={item.href}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs text-muted-foreground hover:bg-muted transition-colors"
+            className="inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
           >
             <Icon className="h-3 w-3" />
             {item.label}

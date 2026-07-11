@@ -6,10 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
 import { useCreateMatch } from "@/hooks/use-matches";
 import { FootballFieldSelector } from "@/components/football-field-selector";
 import type { FootballField } from "@/types/football-field";
+import { Calendar, Clock, Users, FileText } from "lucide-react";
 
 export function MatchForm({ mode = "create" }: { mode?: "create" }) {
   const router = useRouter();
@@ -55,71 +57,97 @@ export function MatchForm({ mode = "create" }: { mode?: "create" }) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 max-w-lg">
-      <div className="space-y-2">
-        <Label htmlFor="title">Title</Label>
-        <Input
-          id="title"
-          placeholder="Sunday kick-about"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          required
-        />
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="description">Description (optional)</Label>
-        <Textarea
-          id="description"
-          placeholder="Casual 7v7 game, all skill levels welcome"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          rows={3}
-        />
-      </div>
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="date">Date</Label>
-          <Input
-            id="date"
-            type="date"
-            value={date}
-            min={new Date().toISOString().split("T")[0]}
-            onChange={(e) => setDate(e.target.value)}
-            required
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="time">Time</Label>
-          <Input
-            id="time"
-            type="time"
-            value={time}
-            onChange={(e) => setTime(e.target.value)}
-            required
-          />
-        </div>
-      </div>
-      <div className="space-y-2">
-        <Label>Football Field</Label>
-        <FootballFieldSelector
-          value={field}
-          onSelect={setField}
-          onClear={() => setField(null)}
-        />
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="maxPlayers">Max players</Label>
-        <Input
-          id="maxPlayers"
-          type="number"
-          min={2}
-          max={50}
-          value={maxPlayers}
-          onChange={(e) => setMaxPlayers(e.target.value)}
-          required
-        />
-      </div>
-      <Button type="submit" disabled={createMatch.isPending}>
+    <form onSubmit={handleSubmit} className="space-y-6 max-w-lg">
+      <Card>
+        <CardContent className="p-5 space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="title" className="flex items-center gap-1.5">
+              <FileText className="h-3.5 w-3.5 text-primary" />
+              Title
+            </Label>
+            <Input
+              id="title"
+              placeholder="Sunday kick-about"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              required
+              className="h-11"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="description">Description (optional)</Label>
+            <Textarea
+              id="description"
+              placeholder="Casual 7v7 game, all skill levels welcome"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              rows={3}
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardContent className="p-5 space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="date" className="flex items-center gap-1.5">
+                <Calendar className="h-3.5 w-3.5 text-primary" />
+                Date
+              </Label>
+              <Input
+                id="date"
+                type="date"
+                value={date}
+                min={new Date().toISOString().split("T")[0]}
+                onChange={(e) => setDate(e.target.value)}
+                required
+                className="h-11"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="time" className="flex items-center gap-1.5">
+                <Clock className="h-3.5 w-3.5 text-primary" />
+                Time
+              </Label>
+              <Input
+                id="time"
+                type="time"
+                value={time}
+                onChange={(e) => setTime(e.target.value)}
+                required
+                className="h-11"
+              />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label>Football Field</Label>
+            <FootballFieldSelector
+              value={field}
+              onSelect={setField}
+              onClear={() => setField(null)}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="maxPlayers" className="flex items-center gap-1.5">
+              <Users className="h-3.5 w-3.5 text-primary" />
+              Max players
+            </Label>
+            <Input
+              id="maxPlayers"
+              type="number"
+              min={2}
+              max={50}
+              value={maxPlayers}
+              onChange={(e) => setMaxPlayers(e.target.value)}
+              required
+              className="h-11"
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      <Button type="submit" disabled={createMatch.isPending} className="w-full h-11">
         {createMatch.isPending ? "Creating..." : "Create match"}
       </Button>
     </form>

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { NavSidebar } from "@/components/nav-sidebar";
+import { BottomNav } from "@/components/bottom-nav";
 import { useRealtimeNotifications } from "@/hooks/use-realtime-notifications";
 
 export default function DashboardLayout({
@@ -55,8 +56,9 @@ export default function DashboardLayout({
     <div className="flex min-h-screen">
       <NavSidebar userId={userId} onUnreadCountChange={handleUnreadChange} unreadVersion={unreadVersion} />
       <main className="flex-1 min-w-0">
-        <div className="container mx-auto p-6">{children}</div>
+        <div className="container mx-auto p-4 pb-24 md:p-6 md:pb-6">{children}</div>
       </main>
+      <BottomNav />
     </div>
   );
 }

@@ -7,6 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useCallback, useTransition } from "react";
+import { Search, ChevronLeft, ChevronRight } from "lucide-react";
+import { motion } from "framer-motion";
 
 const statuses = ["", "OPEN", "FULL", "CLOSED", "COMPLETED"];
 
@@ -35,18 +37,28 @@ export default function MatchesPage() {
   }, [searchParams, router, startTransition]);
 
   return (
-    <div className="space-y-6">
+    <motion.div
+      className="space-y-6"
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+    >
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Matches</h1>
+        <h1 className="text-2xl font-bold font-[family-name:var(--font-barlow-condensed)]">
+          All Matches
+        </h1>
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3">
-        <Input
-          placeholder="Search matches..."
-          value={search}
-          onChange={(e) => updateParam("search", e.target.value)}
-          className="sm:max-w-xs"
-        />
+        <div className="relative flex-1 sm:max-w-xs">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search matches..."
+            value={search}
+            onChange={(e) => updateParam("search", e.target.value)}
+            className="pl-9"
+          />
+        </div>
         <div className="flex gap-2 flex-wrap">
           {statuses.map((s) => (
             <Button
@@ -54,6 +66,7 @@ export default function MatchesPage() {
               variant={status === s ? "default" : "outline"}
               size="sm"
               onClick={() => updateParam("status", s)}
+              className={status === s ? "" : "text-muted-foreground"}
             >
               {s || "All"}
             </Button>
@@ -64,30 +77,34 @@ export default function MatchesPage() {
       {isPending ? (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {Array.from({ length: 6 }).map((_, i) => (
-            <Skeleton key={i} className="h-48 rounded-lg" />
+            <Skeleton key={i} className="h-48 rounded-2xl" />
           ))}
         </div>
       ) : !data?.matches.length ? (
-        <p className="text-muted-foreground text-center py-12">No matches found.</p>
+        <div className="text-center py-16">
+          <p className="text-muted-foreground font-medium">No matches found</p>
+        </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {data.matches.map((m) => (
-            <MatchCard key={m.id} match={m} />
+          {data.matches.map((m, i) => (
+            <MatchCard key={m.id} match={m} index={i} />
           ))}
         </div>
       )}
 
       {data && data.totalPages > 1 && (
-        <div className="flex justify-center gap-2">
+        <div className="flex items-center justify-center gap-4">
           <Button
             variant="outline"
             size="sm"
             disabled={page <= 1}
             onClick={() => updateParam("page", String(page - 1))}
+            className="gap-1"
           >
+            <ChevronLeft className="h-4 w-4" />
             Previous
           </Button>
-          <span className="text-sm text-muted-foreground py-1">
+          <span className="text-sm text-muted-foreground">
             Page {page} of {data.totalPages}
           </span>
           <Button
@@ -95,11 +112,13 @@ export default function MatchesPage() {
             size="sm"
             disabled={page >= data.totalPages}
             onClick={() => updateParam("page", String(page + 1))}
+            className="gap-1"
           >
             Next
+            <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
       )}
-    </div>
+    </motion.div>
   );
 }

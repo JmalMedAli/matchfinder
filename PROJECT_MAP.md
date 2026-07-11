@@ -217,3 +217,21 @@ LOG_LEVEL=debug
 - **API:** all match/join-request selects now include full profile fields
 - **Types:** `MatchOrganizer` expanded with all profile fields; `filterPublicProfile()` utility in `src/types/profile.ts`
 - **Nav:** "My Profile" added as last nav item (User icon)
+
+## Phase 7 UI/UX Redesign (Applied)
+- **Design system:** Football green (#16A34A) primary, dark navy (#0F172A) secondary, orange (#F97316) accent
+- **Typography:** Barlow (body) + Barlow Condensed (headings) via next/font/google
+- **Colors:** oklch color tokens in globals.css, CSS variables for light/dark modes
+- **Mobile nav:** Bottom nav component (5 items: Home, Nearby, Create, My Matches, Profile) — fixed bottom, hidden on desktop
+- **Dashboard layout:** Bottom padding for mobile (pb-24), sidebar hidden on mobile
+- **Landing page:** Redesigned with marketplace pattern — hero with stats, HowItWorks (4 steps), Features (6 cards), SocialProof (3 testimonials), CTA section, full footer
+- **Auth pages:** Split-layout design — green branding panel (desktop) + form, Google SVG logo, icon tabs (Mail/Phone), larger touch targets (h-11)
+- **Dashboard:** Date card with day/month, spots left indicator, staggered animations, empty state with icon
+- **Match cards:** Status badges, date/time/location with icons, organizer position, spots counter
+- **Match detail:** Back link, date/time grid, field card with Google Maps, organizer avatar + contact links, request status icons
+- **Match form:** Card sections (info + logistics), icon labels, larger inputs
+- **Notifications:** Unread "NEW" badge, "Earlier" section, empty state with icon
+- **Nearby:** Compass icon header, location denied banner with icon, grid layout
+- **My Matches:** Status section headers with icons (CheckCircle/Hourglass/XCircle), date + location in cards
+- **All pages:** Framer Motion animations (fade-in + slide-up, staggered lists), font-[family-name:var(--font-barlow-condensed)] for headings
+- **New components:** landing-hero, how-it-works, features, social-proof, cta-section, bottom-nav

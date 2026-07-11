@@ -2,6 +2,7 @@
 
 import { use, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useMatch, useUpdateMatch } from "@/hooks/use-matches";
 import { useFootballField } from "@/hooks/use-football-fields";
 import { createClient } from "@/lib/supabase/client";
@@ -9,10 +10,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FootballFieldSelector } from "@/components/football-field-selector";
 import type { FootballField } from "@/types/football-field";
+import { ArrowLeft, Calendar, Clock, Users, FileText } from "lucide-react";
+import { motion } from "framer-motion";
 
 export default function EditMatchPage({
   params,
@@ -62,7 +66,7 @@ export default function EditMatchPage({
   }, [existingField]);
 
   if (isPending) {
-    return <Skeleton className="h-64 rounded-lg max-w-lg" />;
+    return <Skeleton className="h-64 rounded-2xl max-w-lg" />;
   }
 
   if (!match) {
@@ -108,56 +112,92 @@ export default function EditMatchPage({
   }
 
   return (
-    <div className="space-y-6 max-w-lg">
-      <h1 className="text-2xl font-bold">Edit match</h1>
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor="title">Title</Label>
-          <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} required />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="description">Description</Label>
-          <Textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} rows={3} />
-        </div>
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="date">Date</Label>
-            <Input id="date" type="date" value={date} min={new Date().toISOString().split("T")[0]} onChange={(e) => setDate(e.target.value)} required />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="time">Time</Label>
-            <Input id="time" type="time" value={time} onChange={(e) => setTime(e.target.value)} required />
-          </div>
-        </div>
-        <div className="space-y-2">
-          <Label>Football Field</Label>
-          <FootballFieldSelector
-            value={field}
-            onSelect={setField}
-            onClear={() => setField(null)}
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="maxPlayers">Max players</Label>
-          <Input
-            id="maxPlayers"
-            type="number"
-            min={2}
-            max={50}
-            value={maxPlayers}
-            onChange={(e) => setMaxPlayers(e.target.value)}
-            required
-          />
-        </div>
+    <motion.div
+      className="space-y-6 max-w-lg"
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+    >
+      <Link href={`/dashboard/matches/${id}`} className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
+        <ArrowLeft className="h-4 w-4" />
+        Back to match
+      </Link>
+
+      <h1 className="text-2xl font-bold font-[family-name:var(--font-barlow-condensed)]">
+        Edit match
+      </h1>
+
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <Card>
+          <CardContent className="p-5 space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="title" className="flex items-center gap-1.5">
+                <FileText className="h-3.5 w-3.5 text-primary" />
+                Title
+              </Label>
+              <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} required className="h-11" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="description">Description</Label>
+              <Textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} rows={3} />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-5 space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="date" className="flex items-center gap-1.5">
+                  <Calendar className="h-3.5 w-3.5 text-primary" />
+                  Date
+                </Label>
+                <Input id="date" type="date" value={date} min={new Date().toISOString().split("T")[0]} onChange={(e) => setDate(e.target.value)} required className="h-11" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="time" className="flex items-center gap-1.5">
+                  <Clock className="h-3.5 w-3.5 text-primary" />
+                  Time
+                </Label>
+                <Input id="time" type="time" value={time} onChange={(e) => setTime(e.target.value)} required className="h-11" />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Football Field</Label>
+              <FootballFieldSelector
+                value={field}
+                onSelect={setField}
+                onClear={() => setField(null)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="maxPlayers" className="flex items-center gap-1.5">
+                <Users className="h-3.5 w-3.5 text-primary" />
+                Max players
+              </Label>
+              <Input
+                id="maxPlayers"
+                type="number"
+                min={2}
+                max={50}
+                value={maxPlayers}
+                onChange={(e) => setMaxPlayers(e.target.value)}
+                required
+                className="h-11"
+              />
+            </div>
+          </CardContent>
+        </Card>
+
         <div className="flex gap-3">
-          <Button type="submit" disabled={updateMatch.isPending}>
+          <Button type="submit" disabled={updateMatch.isPending} className="h-11">
             {updateMatch.isPending ? "Saving..." : "Save changes"}
           </Button>
-          <Button type="button" variant="outline" onClick={() => router.back()}>
+          <Button type="button" variant="outline" onClick={() => router.back()} className="h-11">
             Cancel
           </Button>
         </div>
       </form>
-    </div>
+    </motion.div>
   );
 }
