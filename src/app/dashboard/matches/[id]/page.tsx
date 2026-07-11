@@ -307,9 +307,11 @@ export default function MatchDetailPage({
                 <Hourglass className="h-3 w-3" />
                 Request pending
               </Badge>
-              <Button variant="outline" size="sm" onClick={() => handleWithdraw(myRequest.id)} disabled={withdrawRequest.isPending}>
-                Withdraw
-              </Button>
+              <motion.div whileTap={{ scale: 0.9 }}>
+                <Button variant="outline" size="sm" onClick={() => handleWithdraw(myRequest.id)} disabled={withdrawRequest.isPending}>
+                  Withdraw
+                </Button>
+              </motion.div>
             </div>
           ) : myRequest?.status === "ACCEPTED" ? (
             <Badge className="gap-1.5">
@@ -327,9 +329,11 @@ export default function MatchDetailPage({
               </Button>
             </div>
           ) : (
-            <Button onClick={handleJoin} disabled={joinRequest.isPending} className="gap-2">
-              {joinRequest.isPending ? "Sending..." : "Request to join"}
-            </Button>
+            <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.95 }}>
+              <Button onClick={handleJoin} disabled={joinRequest.isPending} className="gap-2">
+                {joinRequest.isPending ? "Sending..." : "Request to join"}
+              </Button>
+            </motion.div>
           )}
         </motion.div>
       )}
@@ -364,39 +368,50 @@ export default function MatchDetailPage({
             Join Requests
           </h2>
           <div className="space-y-3">
-            {match.join_requests.map((req: any) => {
+            {match.join_requests.map((req: any, i: number) => {
               const reqStatus = requestStatusConfig[req.status] ?? { label: req.status, variant: "outline" as const, icon: Hourglass };
               const ReqIcon = reqStatus.icon;
               return (
-                <Card key={req.id}>
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <Avatar className="h-9 w-9">
-                          <AvatarImage src={req.profiles?.image ?? undefined} />
-                          <AvatarFallback>{req.profiles?.name?.[0] ?? "?"}</AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <p className="font-medium text-sm">{req.profiles?.name ?? "Unknown"}</p>
-                          {req.profiles?.position && (
-                            <p className="text-xs text-muted-foreground">{req.profiles.position}</p>
-                          )}
-                          <Badge variant={reqStatus.variant} className="text-xs mt-1 gap-1">
-                            <ReqIcon className="h-3 w-3" />
-                            {reqStatus.label}
-                          </Badge>
+                <motion.div
+                  key={req.id}
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: i * 0.05 }}
+                >
+                  <Card>
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <Avatar className="h-9 w-9">
+                            <AvatarImage src={req.profiles?.image ?? undefined} />
+                            <AvatarFallback>{req.profiles?.name?.[0] ?? "?"}</AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <p className="font-medium text-sm">{req.profiles?.name ?? "Unknown"}</p>
+                            {req.profiles?.position && (
+                              <p className="text-xs text-muted-foreground">{req.profiles.position}</p>
+                            )}
+                            <Badge variant={reqStatus.variant} className="text-xs mt-1 gap-1">
+                              <ReqIcon className="h-3 w-3" />
+                              {reqStatus.label}
+                            </Badge>
+                          </div>
                         </div>
+                        {req.status === "PENDING" && (
+                          <div className="flex gap-2">
+                            <motion.div whileTap={{ scale: 0.9 }}>
+                              <Button size="sm" onClick={() => handleRequestAction(req.id, "ACCEPTED")}>Accept</Button>
+                            </motion.div>
+                            <motion.div whileTap={{ scale: 0.9 }}>
+                              <Button size="sm" variant="destructive" onClick={() => handleRequestAction(req.id, "REJECTED")}>Reject</Button>
+                            </motion.div>
+                          </div>
+                        )}
                       </div>
-                      {req.status === "PENDING" && (
-                        <div className="flex gap-2">
-                          <Button size="sm" onClick={() => handleRequestAction(req.id, "ACCEPTED")}>Accept</Button>
-                          <Button size="sm" variant="destructive" onClick={() => handleRequestAction(req.id, "REJECTED")}>Reject</Button>
-                        </div>
-                      )}
-                    </div>
-                    <RequestContact profiles={req.profiles} viewerId={userId} />
-                  </CardContent>
-                </Card>
+                      <RequestContact profiles={req.profiles} viewerId={userId} />
+                    </CardContent>
+                  </Card>
+                </motion.div>
               );
             })}
           </div>

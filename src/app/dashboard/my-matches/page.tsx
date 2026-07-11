@@ -45,55 +45,62 @@ export default function MyMatchesPage() {
     }
     return (
       <div className="space-y-3">
-        {items.map((r) => {
+        {items.map((r, i) => {
           const status = requestStatusConfig[r.status] ?? { label: r.status, variant: "outline" as const, icon: Hourglass };
           const StatusIcon = status.icon;
           const date = r.matches ? new Date(r.matches.date) : null;
           return (
-            <Card key={r.id} className="hover:shadow-sm transition-shadow">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between gap-3">
-                  <div className="flex-1 min-w-0">
-                    <Link href={`/dashboard/matches/${r.match_id}`} className="font-semibold hover:text-primary transition-colors">
-                      {r.matches?.title ?? "Match"}
-                    </Link>
-                    <div className="flex items-center gap-3 text-sm text-muted-foreground mt-1">
-                      {date && (
-                        <span className="flex items-center gap-1">
-                          <Calendar className="h-3.5 w-3.5" />
-                          {date.toLocaleDateString()}
+            <motion.div
+              key={r.id}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: i * 0.05 }}
+            >
+              <Card className="hover:shadow-sm transition-shadow">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <Link href={`/dashboard/matches/${r.match_id}`} className="font-semibold hover:text-primary transition-colors">
+                        {r.matches?.title ?? "Match"}
+                      </Link>
+                      <div className="flex items-center gap-3 text-sm text-muted-foreground mt-1">
+                        {date && (
+                          <span className="flex items-center gap-1">
+                            <Calendar className="h-3.5 w-3.5" />
+                            {date.toLocaleDateString()}
+                          </span>
+                        )}
+                        <span className="flex items-center gap-1 truncate">
+                          <MapPin className="h-3.5 w-3.5 shrink-0" />
+                          <span className="truncate">{r.matches?.location}</span>
                         </span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <Badge variant={status.variant} className="gap-1">
+                        <StatusIcon className="h-3 w-3" />
+                        {status.label}
+                      </Badge>
+                      {showWithdraw && r.status === "PENDING" && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          disabled={withdrawRequest.isPending}
+                          onClick={() => {
+                            withdrawRequest.mutate(r.id, {
+                              onSuccess: () => toast.success("Request withdrawn"),
+                              onError: (err) => toast.error(err.message),
+                            });
+                          }}
+                        >
+                          Withdraw
+                        </Button>
                       )}
-                      <span className="flex items-center gap-1 truncate">
-                        <MapPin className="h-3.5 w-3.5 shrink-0" />
-                        <span className="truncate">{r.matches?.location}</span>
-                      </span>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <Badge variant={status.variant} className="gap-1">
-                      <StatusIcon className="h-3 w-3" />
-                      {status.label}
-                    </Badge>
-                    {showWithdraw && r.status === "PENDING" && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        disabled={withdrawRequest.isPending}
-                        onClick={() => {
-                          withdrawRequest.mutate(r.id, {
-                            onSuccess: () => toast.success("Request withdrawn"),
-                            onError: (err) => toast.error(err.message),
-                          });
-                        }}
-                      >
-                        Withdraw
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            </motion.div>
           );
         })}
       </div>

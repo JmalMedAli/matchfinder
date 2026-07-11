@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { MapPin, Search, X, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { motion, AnimatePresence } from "framer-motion";
 import type { FootballField } from "@/types/football-field";
 
 interface FootballFieldSelectorProps {
@@ -78,64 +79,94 @@ export function FootballFieldSelector({
 
   return (
     <div className="space-y-2">
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
-          ref={inputRef}
-          placeholder="Search football fields..."
-          value={search}
-          onChange={(e) => handleSearchChange(e.target.value)}
-          className="pl-9"
-          onBlur={() => {
-            setTimeout(() => {
-              if (!value) setOpen(false);
-            }, 200);
-          }}
-        />
-      </div>
-
-      <div className="max-h-64 overflow-y-auto rounded-lg border">
-        {isPending ? (
-          <div className="p-4 text-center text-sm text-muted-foreground">
-            Searching...
-          </div>
-        ) : !fields?.length ? (
-          <div className="p-4 text-center text-sm text-muted-foreground">
-            {query ? "No fields found" : "Start typing to search fields"}
-          </div>
-        ) : (
-          <div className="divide-y">
-            {fields.map((field) => (
-              <button
-                key={field.id}
-                type="button"
-                className={cn(
-                  "w-full text-left px-4 py-3 hover:bg-muted/50 transition-colors flex items-start gap-3",
-                  value?.id === field.id && "bg-muted",
-                )}
-                onMouseDown={(e) => {
-                  e.preventDefault();
-                  onSelect(field);
-                  setOpen(false);
-                  setSearch("");
-                  setQuery("");
-                }}
-              >
-                <MapPin className="h-4 w-4 mt-0.5 shrink-0 text-muted-foreground" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">{field.name}</p>
-                  <p className="text-xs text-muted-foreground truncate">
-                    {field.address ? `${field.address}, ` : ""}{field.city}
-                  </p>
-                </div>
-                {value?.id === field.id && (
-                  <span className="text-xs text-primary font-medium shrink-0">Selected</span>
-                )}
-              </button>
-            ))}
-          </div>
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            className="relative"
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.15 }}
+          >
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              ref={inputRef}
+              placeholder="Search football fields..."
+              value={search}
+              onChange={(e) => handleSearchChange(e.target.value)}
+              className="pl-9"
+              onBlur={() => {
+                setTimeout(() => {
+                  if (!value) setOpen(false);
+                }, 200);
+              }}
+            />
+          </motion.div>
         )}
-      </div>
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            className="max-h-64 overflow-y-auto rounded-lg border"
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.2 }}
+          >
+            {isPending ? (
+              <div className="p-4 text-center text-sm text-muted-foreground">
+                Searching...
+              </div>
+            ) : !fields?.length ? (
+              <div className="p-4 text-center text-sm text-muted-foreground">
+                {query ? "No fields found" : "Start typing to search fields"}
+              </div>
+            ) : (
+              <div className="divide-y">
+                {fields.map((field, i) => (
+                  <motion.button
+                    key={field.id}
+                    type="button"
+                    initial={{ opacity: 0, x: -8 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.2, delay: i * 0.03 }}
+                    className={cn(
+                      "w-full text-left px-4 py-3 hover:bg-muted/50 transition-colors flex items-start gap-3",
+                      value?.id === field.id && "bg-muted",
+                    )}
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      onSelect(field);
+                      setOpen(false);
+                      setSearch("");
+                      setQuery("");
+                    }}
+                  >
+                    <MapPin className="h-4 w-4 mt-0.5 shrink-0 text-muted-foreground" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{field.name}</p>
+                      <p className="text-xs text-muted-foreground truncate">
+                        {field.address ? `${field.address}, ` : ""}{field.city}
+                      </p>
+                    </div>
+                    {value?.id === field.id && (
+                      <motion.span
+                        className="text-xs text-primary font-medium shrink-0"
+                        initial={{ opacity: 0, scale: 0.5 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ type: "spring", stiffness: 500, damping: 25 }}
+                      >
+                        Selected
+                      </motion.span>
+                    )}
+                  </motion.button>
+                ))}
+              </div>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {value && (
         <Button

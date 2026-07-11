@@ -111,6 +111,17 @@ export default function EditMatchPage({
     );
   }
 
+  const isFormValid = title && date && time && field && maxPlayers;
+
+  const cardVariants = {
+    hidden: { opacity: 0, y: 16 },
+    visible: (i: number) => ({
+      opacity: 1,
+      y: 0,
+      transition: { duration: 0.4, delay: i * 0.1, ease: [0.25, 0.46, 0.45, 0.94] as const },
+    }),
+  };
+
   return (
     <motion.div
       className="space-y-6 max-w-lg"
@@ -128,75 +139,87 @@ export default function EditMatchPage({
       </h1>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        <Card>
-          <CardContent className="p-5 space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="title" className="flex items-center gap-1.5">
-                <FileText className="h-3.5 w-3.5 text-primary" />
-                Title
-              </Label>
-              <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} required className="h-11" />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
-              <Textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} rows={3} />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-5 space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+        <motion.div custom={0} variants={cardVariants} initial="hidden" animate="visible">
+          <Card>
+            <CardContent className="p-5 space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="date" className="flex items-center gap-1.5">
-                  <Calendar className="h-3.5 w-3.5 text-primary" />
-                  Date
+                <Label htmlFor="title" className="flex items-center gap-1.5">
+                  <FileText className="h-3.5 w-3.5 text-primary" />
+                  Title
                 </Label>
-                <Input id="date" type="date" value={date} min={new Date().toISOString().split("T")[0]} onChange={(e) => setDate(e.target.value)} required className="h-11" />
+                <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} required className="h-11" />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="time" className="flex items-center gap-1.5">
-                  <Clock className="h-3.5 w-3.5 text-primary" />
-                  Time
-                </Label>
-                <Input id="time" type="time" value={time} onChange={(e) => setTime(e.target.value)} required className="h-11" />
+                <Label htmlFor="description">Description</Label>
+                <Textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} rows={3} />
               </div>
-            </div>
-            <div className="space-y-2">
-              <Label>Football Field</Label>
-              <FootballFieldSelector
-                value={field}
-                onSelect={setField}
-                onClear={() => setField(null)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="maxPlayers" className="flex items-center gap-1.5">
-                <Users className="h-3.5 w-3.5 text-primary" />
-                Max players
-              </Label>
-              <Input
-                id="maxPlayers"
-                type="number"
-                min={2}
-                max={50}
-                value={maxPlayers}
-                onChange={(e) => setMaxPlayers(e.target.value)}
-                required
-                className="h-11"
-              />
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </motion.div>
 
-        <div className="flex gap-3">
-          <Button type="submit" disabled={updateMatch.isPending} className="h-11">
-            {updateMatch.isPending ? "Saving..." : "Save changes"}
-          </Button>
+        <motion.div custom={1} variants={cardVariants} initial="hidden" animate="visible">
+          <Card>
+            <CardContent className="p-5 space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="date" className="flex items-center gap-1.5">
+                    <Calendar className="h-3.5 w-3.5 text-primary" />
+                    Date
+                  </Label>
+                  <Input id="date" type="date" value={date} min={new Date().toISOString().split("T")[0]} onChange={(e) => setDate(e.target.value)} required className="h-11" />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="time" className="flex items-center gap-1.5">
+                    <Clock className="h-3.5 w-3.5 text-primary" />
+                    Time
+                  </Label>
+                  <Input id="time" type="time" value={time} onChange={(e) => setTime(e.target.value)} required className="h-11" />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>Football Field</Label>
+                <FootballFieldSelector
+                  value={field}
+                  onSelect={setField}
+                  onClear={() => setField(null)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="maxPlayers" className="flex items-center gap-1.5">
+                  <Users className="h-3.5 w-3.5 text-primary" />
+                  Max players
+                </Label>
+                <Input
+                  id="maxPlayers"
+                  type="number"
+                  min={2}
+                  max={50}
+                  value={maxPlayers}
+                  onChange={(e) => setMaxPlayers(e.target.value)}
+                  required
+                  className="h-11"
+                />
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        <motion.div
+          className="flex gap-3"
+          custom={2}
+          variants={cardVariants}
+          initial="hidden"
+          animate="visible"
+        >
+          <motion.div whileHover={isFormValid ? { scale: 1.02 } : undefined} whileTap={isFormValid ? { scale: 0.97 } : undefined}>
+            <Button type="submit" disabled={updateMatch.isPending || !isFormValid} className="h-11">
+              {updateMatch.isPending ? "Saving..." : "Save changes"}
+            </Button>
+          </motion.div>
           <Button type="button" variant="outline" onClick={() => router.back()} className="h-11">
             Cancel
           </Button>
-        </div>
+        </motion.div>
       </form>
     </motion.div>
   );

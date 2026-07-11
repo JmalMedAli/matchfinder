@@ -11,6 +11,7 @@ import { Menu, PlusCircle, LayoutDashboard, Bell, LogOut, MapPin, User } from "l
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ConnectionStatus } from "@/components/connection-status";
 import { useEffect, useState, useCallback } from "react";
+import { motion } from "framer-motion";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -99,7 +100,7 @@ function NavContent({
 
   return (
     <nav className="flex flex-col gap-1 p-4">
-      {navItems.map((item) => {
+      {navItems.map((item, i) => {
         const Icon = item.icon;
         const active =
           item.href === "/dashboard"
@@ -107,21 +108,38 @@ function NavContent({
             : pathname.startsWith(item.href);
         const showBadge = item.href === "/dashboard/notifications" && unreadCount > 0;
         return (
-          <Link key={item.href} href={item.href}>
-            <Button
-              variant={active ? "secondary" : "ghost"}
-              className={cn("w-full justify-start gap-2", active && "font-medium")}
-              onClick={onNavigate}
-            >
-              <Icon className="h-4 w-4" />
-              {item.label}
-              {showBadge && (
-                <span className="ml-auto inline-flex items-center justify-center h-5 min-w-5 px-1 rounded-full bg-primary text-primary-foreground text-[10px] font-bold">
-                  {unreadCount > 99 ? "99+" : unreadCount}
-                </span>
-              )}
-            </Button>
-          </Link>
+          <motion.div
+            key={item.href}
+            initial={{ opacity: 0, x: -12 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.3, delay: i * 0.05 }}
+          >
+            <Link href={item.href}>
+              <motion.div
+                whileHover={{ x: 4 }}
+                transition={{ type: "spring", stiffness: 400, damping: 25 }}
+              >
+                <Button
+                  variant={active ? "secondary" : "ghost"}
+                  className={cn("w-full justify-start gap-2", active && "font-medium")}
+                  onClick={onNavigate}
+                >
+                  <Icon className="h-4 w-4" />
+                  {item.label}
+                  {showBadge && (
+                    <motion.span
+                      className="ml-auto inline-flex items-center justify-center h-5 min-w-5 px-1 rounded-full bg-primary text-primary-foreground text-[10px] font-bold"
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{ type: "spring", stiffness: 500, damping: 25 }}
+                    >
+                      {unreadCount > 99 ? "99+" : unreadCount}
+                    </motion.span>
+                  )}
+                </Button>
+              </motion.div>
+            </Link>
+          </motion.div>
         );
       })}
       <div className="mt-auto pt-4 border-t">
@@ -172,16 +190,16 @@ export function NavSidebar({
     <>
       <aside className="hidden md:flex w-64 border-r bg-background flex-col h-screen sticky top-0">
         <div className="p-4 border-b">
-          <Link href="/dashboard" className="text-lg font-bold">
-            MatchFinder
+          <Link href="/dashboard" className="text-lg font-bold font-[family-name:var(--font-barlow-condensed)] tracking-wide">
+            <span className="text-primary">Match</span>Finder
           </Link>
         </div>
         <NavContent userId={userId} onUnreadCountChange={onUnreadCountChange} unreadVersion={unreadVersion} />
       </aside>
 
       <div className="md:hidden flex items-center justify-between border-b px-4 h-14 sticky top-0 bg-background z-40">
-        <Link href="/dashboard" className="text-lg font-bold">
-          MatchFinder
+        <Link href="/dashboard" className="text-lg font-bold font-[family-name:var(--font-barlow-condensed)] tracking-wide">
+          <span className="text-primary">Match</span>Finder
         </Link>
         <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
           <SheetTrigger
