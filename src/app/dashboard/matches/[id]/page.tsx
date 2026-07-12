@@ -7,6 +7,9 @@ import { useMatch, useDeleteMatch, useUpdateMatch } from "@/hooks/use-matches";
 import { useJoinRequest, useJoinRequests, useUpdateJoinRequest, useWithdrawJoinRequest } from "@/hooks/use-join-requests";
 import { useRealtimeJoinRequests } from "@/hooks/use-realtime-join-requests";
 import { useMatchReviews, useSubmitReview } from "@/hooks/use-reviews";
+import { useMatchPhotos } from "@/hooks/use-match-photos";
+import type { MatchPhoto } from "@/hooks/use-match-photos";
+import { PhotoGallery } from "@/components/photo-gallery";
 import { useFootballField } from "@/hooks/use-football-fields";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -60,6 +63,8 @@ export default function MatchDetailPage({
   const { data: field } = useFootballField(match?.football_field_id);
   const { data: matchReviews } = useMatchReviews(id);
   const submitReview = useSubmitReview();
+  const { data: photos, isPending: photosPending } = useMatchPhotos(id);
+  const [photosState, setPhotosState] = useState<MatchPhoto[]>([]);
   const [groupConvId, setGroupConvId] = useState<string | null>(null);
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
 
@@ -95,6 +100,10 @@ export default function MatchDetailPage({
     }
     loadConv();
   }, [id, userId]);
+
+  useEffect(() => {
+    if (photos) setPhotosState(photos);
+  }, [photos]);
 
   if (isPending) {
     return (
@@ -575,6 +584,22 @@ export default function MatchDetailPage({
           </div>
         </motion.div>
       )}
+
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, delay: 0.35 }}
+      >
+        <Separator className="mb-6" />
+        <PhotoGallery
+          matchId={id}
+          userId={userId}
+          photos={photosState}
+          isParticipant={isOrganizer || acceptedPlayers.some((r: any) => r.player_id === userId)}
+          onUpload={(photo) => setPhotosState((prev) => [photo, ...prev])}
+          onDelete={(photoId) => setPhotosState((prev) => prev.filter((p) => p.id !== photoId))}
+        />
+      </motion.div>
 
       {selectedPlayerId && match.join_requests && (
         <PlayerProfileModal

@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { NavSidebar } from "@/components/nav-sidebar";
 import { BottomNav } from "@/components/bottom-nav";
 import { useRealtimeNotifications } from "@/hooks/use-realtime-notifications";
+import { useMatchReminders } from "@/hooks/use-match-reminders";
 
 export default function DashboardLayout({
   children,
@@ -43,6 +44,8 @@ export default function DashboardLayout({
     userId,
     onUnreadCountChange: handleUnreadChange,
   });
+
+  useMatchReminders();
 
   if (loading) {
     return (
