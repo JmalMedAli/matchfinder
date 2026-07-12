@@ -18,7 +18,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import {
   MapPin, ExternalLink, Phone, MessageCircle, Globe,
   Calendar, Clock, Users, ArrowLeft, Pencil, Trash2,
-  CheckCircle, XCircle, Hourglass
+  CheckCircle, XCircle, Hourglass, MessagesSquare
 } from "lucide-react";
 import { filterPublicProfile } from "@/types/profile";
 import type { MatchOrganizer } from "@/hooks/use-matches";
@@ -55,6 +55,7 @@ export default function MatchDetailPage({
 
   useRealtimeJoinRequests({ matchId: id });
   const { data: field } = useFootballField(match?.football_field_id);
+  const [groupConvId, setGroupConvId] = useState<string | null>(null);
 
   const loadUser = useCallback(async () => {
     try {
@@ -69,6 +70,25 @@ export default function MatchDetailPage({
   useEffect(() => {
     loadUser();
   }, [loadUser]);
+
+  useEffect(() => {
+    async function loadConv() {
+      if (!id || !userId) return;
+      try {
+        const res = await fetch(`/api/conversations?matchId=${id}`);
+        if (res.ok) {
+          const convs = await res.json();
+          const groupConv = convs.find(
+            (c: { type: string; match_id: string }) => c.type === "group" && c.match_id === id,
+          );
+          if (groupConv) setGroupConvId(groupConv.id);
+        }
+      } catch {
+        // ignore
+      }
+    }
+    loadConv();
+  }, [id, userId]);
 
   if (isPending) {
     return (
@@ -354,6 +374,21 @@ export default function MatchDetailPage({
           {match.status !== "COMPLETED" && (
             <Button size="sm" variant="outline" onClick={() => handleStatusChange("COMPLETED")}>Mark completed</Button>
           )}
+        </motion.div>
+      )}
+
+      {groupConvId && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, delay: 0.18 }}
+        >
+          <Link href={`/dashboard/conversations/${groupConvId}`}>
+            <Button variant="outline" className="gap-2">
+              <MessagesSquare className="h-4 w-4" />
+              Group Chat
+            </Button>
+          </Link>
         </motion.div>
       )}
 

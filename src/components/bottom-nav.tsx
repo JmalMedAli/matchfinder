@@ -3,14 +3,14 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { Home, MapPin, PlusCircle, User, Bell } from "lucide-react";
+import { Home, MapPin, PlusCircle, User, MessageCircle } from "lucide-react";
 import { motion } from "framer-motion";
 
 const bottomNavItems = [
   { href: "/dashboard", label: "Home", icon: Home },
   { href: "/dashboard/nearby", label: "Nearby", icon: MapPin },
   { href: "/dashboard/matches/new", label: "Create", icon: PlusCircle },
-  { href: "/dashboard/my-matches", label: "My Matches", icon: Bell },
+  { href: "/dashboard/conversations", label: "Chats", icon: MessageCircle },
   { href: "/dashboard/profile", label: "Profile", icon: User },
 ];
 

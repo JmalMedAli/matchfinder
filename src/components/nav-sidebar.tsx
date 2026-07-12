@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
 import { useUiStore } from "@/stores/ui-store";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Menu, PlusCircle, LayoutDashboard, Bell, LogOut, MapPin, User } from "lucide-react";
+import { Menu, PlusCircle, LayoutDashboard, Bell, LogOut, MapPin, User, MessageCircle } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ConnectionStatus } from "@/components/connection-status";
 import { useEffect, useState, useCallback } from "react";
@@ -18,6 +18,7 @@ const navItems = [
   { href: "/dashboard/nearby", label: "Nearby Matches", icon: MapPin },
   { href: "/dashboard/matches/new", label: "Create Match", icon: PlusCircle },
   { href: "/dashboard/my-matches", label: "My Matches", icon: LayoutDashboard },
+  { href: "/dashboard/conversations", label: "Conversations", icon: MessageCircle },
   { href: "/dashboard/notifications", label: "Notifications", icon: Bell },
   { href: "/dashboard/profile", label: "My Profile", icon: User },
 ];
@@ -39,6 +40,7 @@ function NavContent({
   const [userEmail, setUserEmail] = useState<string>("");
   const [userImage, setUserImage] = useState<string | null>(null);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [chatUnreadCount, setChatUnreadCount] = useState(0);
 
   const load = useCallback(async () => {
     try {
@@ -65,6 +67,13 @@ function NavContent({
         const c = count ?? 0;
         setUnreadCount(c);
         onUnreadCountChange?.(c);
+
+        const { data: chatCounts } = await supabase.rpc("get_unread_counts", {
+          uid: data.user.id,
+        });
+        const totalChatUnread = (chatCounts as { unread_count: number }[] | null)
+          ?.reduce((sum, row) => sum + Number(row.unread_count), 0) ?? 0;
+        setChatUnreadCount(totalChatUnread);
       }
     } catch {
       // Supabase not configured
@@ -106,7 +115,11 @@ function NavContent({
           item.href === "/dashboard"
             ? pathname === "/dashboard"
             : pathname.startsWith(item.href);
-        const showBadge = item.href === "/dashboard/notifications" && unreadCount > 0;
+        const showBadge =
+          (item.href === "/dashboard/notifications" && unreadCount > 0) ||
+          (item.href === "/dashboard/conversations" && chatUnreadCount > 0);
+        const badgeCount =
+          item.href === "/dashboard/conversations" ? chatUnreadCount : unreadCount;
         return (
           <motion.div
             key={item.href}
@@ -133,7 +146,7 @@ function NavContent({
                       animate={{ scale: 1 }}
                       transition={{ type: "spring", stiffness: 500, damping: 25 }}
                     >
-                      {unreadCount > 99 ? "99+" : unreadCount}
+                      {badgeCount > 99 ? "99+" : badgeCount}
                     </motion.span>
                   )}
                 </Button>
