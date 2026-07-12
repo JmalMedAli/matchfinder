@@ -16,10 +16,11 @@ import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DmButton } from "@/components/dm-button";
+import { PlayerProfileModal } from "@/components/player-profile-modal";
 import {
   MapPin, ExternalLink, Phone, MessageCircle, Globe,
   Calendar, Clock, Users, ArrowLeft, Pencil, Trash2,
-  CheckCircle, XCircle, Hourglass, MessagesSquare
+  CheckCircle, XCircle, Hourglass, MessagesSquare, Eye
 } from "lucide-react";
 import { filterPublicProfile } from "@/types/profile";
 import type { MatchOrganizer } from "@/hooks/use-matches";
@@ -52,11 +53,12 @@ export default function MatchDetailPage({
   const joinRequest = useJoinRequest();
   const withdrawRequest = useWithdrawJoinRequest();
   const { data: myRequests } = useJoinRequests();
-  const { mutate: updateJoinRequest } = useUpdateJoinRequest();
+  const { mutate: updateJoinRequest, isPending: isUpdatingJoinRequest } = useUpdateJoinRequest();
 
   useRealtimeJoinRequests({ matchId: id });
   const { data: field } = useFootballField(match?.football_field_id);
   const [groupConvId, setGroupConvId] = useState<string | null>(null);
+  const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
 
   const loadUser = useCallback(async () => {
     try {
@@ -455,6 +457,12 @@ export default function MatchDetailPage({
                         {req.status === "PENDING" && (
                           <div className="flex gap-2">
                             <motion.div whileTap={{ scale: 0.9 }}>
+                              <Button size="sm" variant="outline" className="gap-1.5" onClick={() => setSelectedPlayerId(req.player_id)}>
+                                <Eye className="h-3.5 w-3.5" />
+                                View
+                              </Button>
+                            </motion.div>
+                            <motion.div whileTap={{ scale: 0.9 }}>
                               <Button size="sm" onClick={() => handleRequestAction(req.id, "ACCEPTED")}>Accept</Button>
                             </motion.div>
                             <motion.div whileTap={{ scale: 0.9 }}>
@@ -481,6 +489,23 @@ export default function MatchDetailPage({
             })}
           </div>
         </motion.div>
+      )}
+
+      {selectedPlayerId && match.join_requests && (
+        <PlayerProfileModal
+          open={!!selectedPlayerId}
+          onOpenChange={(o) => { if (!o) setSelectedPlayerId(null); }}
+          player={match.join_requests.find((r: any) => r.player_id === selectedPlayerId)?.profiles as any ?? { id: selectedPlayerId, name: null, image: null, position: null, city: null, bio: null }}
+          viewerId={userId}
+          onRequestAction={(action) => {
+            const req = match.join_requests.find((r: any) => r.player_id === selectedPlayerId);
+            if (req) {
+              handleRequestAction(req.id, action);
+              setSelectedPlayerId(null);
+            }
+          }}
+          actionPending={isUpdatingJoinRequest}
+        />
       )}
     </div>
   );
