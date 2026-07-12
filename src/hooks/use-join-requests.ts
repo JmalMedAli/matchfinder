@@ -115,3 +115,16 @@ export function useWithdrawJoinRequest() {
     },
   });
 }
+
+async function fetchIncomingJoinRequests(): Promise<JoinRequest[]> {
+  const res = await fetch("/api/join-requests/incoming");
+  if (!res.ok) throw new Error("Failed to fetch incoming requests");
+  return res.json();
+}
+
+export function useIncomingJoinRequests() {
+  return useQuery({
+    queryKey: ["join-requests", "incoming"],
+    queryFn: fetchIncomingJoinRequests,
+  });
+}
