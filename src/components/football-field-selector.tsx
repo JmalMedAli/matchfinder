@@ -4,7 +4,6 @@ import { useState, useCallback, useRef, useEffect } from "react";
 import { useFootballFields } from "@/hooks/use-football-fields";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { MapPin, Search, X, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
@@ -26,6 +25,7 @@ export function FootballFieldSelector({
   const [query, setQuery] = useState("");
   const { data: fields, isPending } = useFootballFields(query || undefined);
   const inputRef = useRef<HTMLInputElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(null);
 
   const handleSearchChange = useCallback((val: string) => {
@@ -49,6 +49,21 @@ export function FootballFieldSelector({
       setOpen(true);
     }
   }, []);
+
+  // Close dropdown when clicking outside the form entirely (not on sibling inputs)
+  useEffect(() => {
+    if (!open) return;
+    function handleMouseDown(e: MouseEvent) {
+      const target = e.target as Node;
+      if (!containerRef.current) return;
+      if (containerRef.current.contains(target)) return;
+      const form = containerRef.current.closest("form");
+      if (form && form.contains(target)) return;
+      setOpen(false);
+    }
+    document.addEventListener("mousedown", handleMouseDown);
+    return () => document.removeEventListener("mousedown", handleMouseDown);
+  }, [open]);
 
   if (!open && value) {
     return (
@@ -84,7 +99,7 @@ export function FootballFieldSelector({
   }
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-2" ref={containerRef}>
       <AnimatePresence>
         {open && (
           <motion.div
@@ -101,11 +116,6 @@ export function FootballFieldSelector({
               value={search}
               onChange={(e) => handleSearchChange(e.target.value)}
               className="pl-9"
-              onBlur={() => {
-                setTimeout(() => {
-                  if (!value) setOpen(false);
-                }, 200);
-              }}
             />
           </motion.div>
         )}
