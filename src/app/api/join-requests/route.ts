@@ -54,6 +54,7 @@ export async function POST(req: NextRequest) {
       p_user_id: match.organizer_id,
       p_title: "New join request",
       p_message: `Someone wants to join "${match.title}"`,
+      p_match_id: matchId,
     });
     return NextResponse.json(updated, { status: 201 });
   }
@@ -70,6 +71,7 @@ export async function POST(req: NextRequest) {
     p_user_id: match.organizer_id,
     p_title: "New join request",
     p_message: `Someone wants to join "${match.title}"`,
+    p_match_id: matchId,
   });
 
   return NextResponse.json(joinRequest, { status: 201 });

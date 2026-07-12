@@ -7,6 +7,7 @@ export interface Notification {
   title: string;
   message: string;
   read: boolean;
+  match_id: string | null;
   created_at: string;
 }
 

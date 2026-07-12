@@ -63,6 +63,7 @@ export async function PATCH(
     p_user_id: joinRequest.player_id,
     p_title: `Request ${status.toLowerCase()}`,
     p_message: `Your request to join "${match.title}" has been ${status.toLowerCase()}`,
+    p_match_id: joinRequest.match_id,
   });
 
   return NextResponse.json({ success: true });

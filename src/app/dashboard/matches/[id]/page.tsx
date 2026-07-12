@@ -102,7 +102,18 @@ export default function MatchDetailPage({
   }
 
   if (!match) {
-    return <p className="text-muted-foreground">Match not found.</p>;
+    return (
+      <div className="flex flex-col items-center py-16 text-center">
+        <div className="h-16 w-16 rounded-2xl bg-muted flex items-center justify-center mb-4">
+          <Calendar className="h-8 w-8 text-muted-foreground/50" />
+        </div>
+        <p className="font-medium text-lg">This match is no longer available.</p>
+        <p className="text-sm text-muted-foreground mt-1">It may have been deleted or completed.</p>
+        <Link href="/dashboard/nearby" className="mt-4">
+          <Button variant="outline" size="sm">Browse nearby matches</Button>
+        </Link>
+      </div>
+    );
   }
 
   const isOrganizer = userId === match.organizer_id;

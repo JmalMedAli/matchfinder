@@ -1,14 +1,17 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useNotifications, useMarkNotificationsRead } from "@/hooks/use-notifications";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Bell, CheckCheck } from "lucide-react";
+import { Bell, CheckCheck, ChevronRight } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { motion } from "framer-motion";
+import type { Notification } from "@/hooks/use-notifications";
 
 export default function NotificationsPage() {
+  const router = useRouter();
   const { data: notifications, isPending } = useNotifications();
   const markRead = useMarkNotificationsRead();
 
@@ -27,6 +30,19 @@ export default function NotificationsPage() {
 
   function handleMarkAllRead() {
     markRead.mutate(undefined);
+  }
+
+  function handleNotificationClick(n: Notification) {
+    if (!n.match_id) return;
+    if (!n.read) {
+      markRead.mutate([n.id], {
+        onSuccess: () => {
+          router.push(`/dashboard/matches/${n.match_id}`);
+        },
+      });
+    } else {
+      router.push(`/dashboard/matches/${n.match_id}`);
+    }
   }
 
   return (
@@ -72,20 +88,28 @@ export default function NotificationsPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.2, delay: i * 0.05 }}
             >
-              <Card className="border-primary/20 bg-primary/5">
-                <CardContent className="p-4">
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="font-medium text-sm">{n.title}</p>
-                      <p className="text-sm text-muted-foreground mt-0.5">{n.message}</p>
-                      <p className="text-xs text-muted-foreground mt-1.5">
-                        {new Date(n.created_at).toLocaleString()}
-                      </p>
+              <motion.div whileTap={n.match_id ? { scale: 0.98 } : undefined}>
+                <Card
+                  className={`border-primary/20 bg-primary/5 ${n.match_id ? "cursor-pointer hover:bg-primary/10 hover:border-primary/30 transition-colors" : ""}`}
+                  onClick={() => handleNotificationClick(n)}
+                >
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm">{n.title}</p>
+                        <p className="text-sm text-muted-foreground mt-0.5">{n.message}</p>
+                        <p className="text-xs text-muted-foreground mt-1.5">
+                          {new Date(n.created_at).toLocaleString()}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <Badge className="shrink-0">NEW</Badge>
+                        {n.match_id && <ChevronRight className="h-4 w-4 text-muted-foreground" />}
+                      </div>
                     </div>
-                    <Badge className="shrink-0">NEW</Badge>
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              </motion.div>
             </motion.div>
           ))}
         </section>
@@ -95,15 +119,25 @@ export default function NotificationsPage() {
         <section className="space-y-3">
           <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Earlier</h2>
           {read.map((n) => (
-            <Card key={n.id}>
-              <CardContent className="p-4">
-                <p className="font-medium text-sm">{n.title}</p>
-                <p className="text-sm text-muted-foreground mt-0.5">{n.message}</p>
-                <p className="text-xs text-muted-foreground mt-1.5">
-                  {new Date(n.created_at).toLocaleString()}
-                </p>
-              </CardContent>
-            </Card>
+            <motion.div whileTap={n.match_id ? { scale: 0.98 } : undefined} key={n.id}>
+              <Card
+                className={`${n.match_id ? "cursor-pointer hover:bg-muted/50 transition-colors" : ""}`}
+                onClick={() => handleNotificationClick(n)}
+              >
+                <CardContent className="p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-sm">{n.title}</p>
+                      <p className="text-sm text-muted-foreground mt-0.5">{n.message}</p>
+                      <p className="text-xs text-muted-foreground mt-1.5">
+                        {new Date(n.created_at).toLocaleString()}
+                      </p>
+                    </div>
+                    {n.match_id && <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />}
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
           ))}
         </section>
       )}
