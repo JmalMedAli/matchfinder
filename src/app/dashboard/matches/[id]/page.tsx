@@ -10,6 +10,9 @@ import { useMatchReviews, useSubmitReview } from "@/hooks/use-reviews";
 import { useMatchPhotos } from "@/hooks/use-match-photos";
 import type { MatchPhoto } from "@/hooks/use-match-photos";
 import { PhotoGallery } from "@/components/photo-gallery";
+import { TeamPicker } from "@/components/team-picker";
+import { AvailabilityPicker } from "@/components/availability-picker";
+import { useMatchAvailability, useSetAvailability } from "@/hooks/use-match-availability";
 import { useFootballField } from "@/hooks/use-football-fields";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -64,6 +67,8 @@ export default function MatchDetailPage({
   const { data: matchReviews } = useMatchReviews(id);
   const submitReview = useSubmitReview();
   const { data: photos, isPending: photosPending } = useMatchPhotos(id);
+  const { data: availability } = useMatchAvailability(id);
+  const setAvailability = useSetAvailability();
   const [photosState, setPhotosState] = useState<MatchPhoto[]>([]);
   const [groupConvId, setGroupConvId] = useState<string | null>(null);
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
@@ -427,6 +432,24 @@ export default function MatchDetailPage({
         </motion.div>
       )}
 
+      {match.status !== "COMPLETED" && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, delay: 0.19 }}
+        >
+          <Separator className="mb-6" />
+          <AvailabilityPicker
+            matchId={id}
+            userId={userId}
+            availability={availability ?? []}
+            currentStatus={availability?.find((a) => a.user_id === userId)?.status ?? null}
+            onSet={(status) => setAvailability.mutate({ matchId: id, status })}
+            isPending={setAvailability.isPending}
+          />
+        </motion.div>
+      )}
+
       {isOrganizer && (match.join_requests?.length ?? 0) > 0 && (
         <motion.div
           initial={{ opacity: 0, y: 10 }}
@@ -501,6 +524,24 @@ export default function MatchDetailPage({
               );
             })}
           </div>
+        </motion.div>
+      )}
+
+      {isOrganizer && acceptedPlayers.length >= 2 && match.status !== "COMPLETED" && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, delay: 0.22 }}
+        >
+          <Separator className="mb-6" />
+          <TeamPicker
+            players={acceptedPlayers.map((r: any) => ({
+              id: r.player_id,
+              name: r.profiles?.name ?? null,
+              image: r.profiles?.image ?? null,
+              position: r.profiles?.position ?? null,
+            }))}
+          />
         </motion.div>
       )}
 

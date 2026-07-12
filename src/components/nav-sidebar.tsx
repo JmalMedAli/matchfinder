@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
 import { useUiStore } from "@/stores/ui-store";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Menu, PlusCircle, LayoutDashboard, Bell, LogOut, MapPin, User, MessageCircle } from "lucide-react";
+import { Menu, PlusCircle, LayoutDashboard, Bell, LogOut, MapPin, User, MessageCircle, Shield } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ConnectionStatus } from "@/components/connection-status";
 import { useEffect, useState, useCallback } from "react";
@@ -21,6 +21,7 @@ const navItems = [
   { href: "/dashboard/conversations", label: "Conversations", icon: MessageCircle },
   { href: "/dashboard/notifications", label: "Notifications", icon: Bell },
   { href: "/dashboard/profile", label: "My Profile", icon: User },
+  { href: "/dashboard/admin", label: "Admin", icon: Shield },
 ];
 
 function NavContent({
