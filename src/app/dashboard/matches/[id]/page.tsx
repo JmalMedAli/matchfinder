@@ -15,6 +15,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
+import { DmButton } from "@/components/dm-button";
 import {
   MapPin, ExternalLink, Phone, MessageCircle, Globe,
   Calendar, Clock, Users, ArrowLeft, Pencil, Trash2,
@@ -310,6 +311,14 @@ export default function MatchDetailPage({
                 </div>
               </div>
               <OrganizerContact profiles={match.profiles} viewerId={userId} />
+              {!isOrganizer && match.organizer_id && (
+                <div className="mt-3">
+                  <DmButton
+                    targetId={match.organizer_id}
+                    targetName={match.profiles?.name ?? undefined}
+                  />
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -444,6 +453,16 @@ export default function MatchDetailPage({
                         )}
                       </div>
                       <RequestContact profiles={req.profiles} viewerId={userId} />
+                      {isOrganizer && req.player_id !== userId && (
+                        <div className="mt-2">
+                          <DmButton
+                            targetId={req.player_id}
+                            targetName={req.profiles?.name ?? undefined}
+                            size="sm"
+                            variant="ghost"
+                          />
+                        </div>
+                      )}
                     </CardContent>
                   </Card>
                 </motion.div>

@@ -39,7 +39,21 @@ export function ChatView({ conversationId }: ChatViewProps) {
     conversationId,
     onMessage: (msg) => {
       if (msg.sender_id !== userId) {
-        qc.invalidateQueries({ queryKey: ["messages", conversationId] });
+        qc.setQueryData(
+          ["messages", conversationId],
+          (old: { pages: { messages: Message[]; nextCursor: string | null }[] } | undefined) => {
+            if (!old) return old;
+            const pages = [...old.pages];
+            const lastIdx = pages.length - 1;
+            const lastPage = pages[lastIdx];
+            if (lastPage.messages.some((m) => m.id === msg.id)) return old;
+            pages[lastIdx] = {
+              ...lastPage,
+              messages: [...lastPage.messages, msg],
+            };
+            return { ...old, pages };
+          },
+        );
       }
     },
   });
