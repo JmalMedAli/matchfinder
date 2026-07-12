@@ -98,6 +98,18 @@ export function useUpdateJoinRequest() {
   });
 }
 
+export function useRemoveAcceptedPlayer() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id }: { id: string }) =>
+      updateJoinRequest(id, { status: "REJECTED" }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["join-requests"] });
+      qc.invalidateQueries({ queryKey: ["matches"] });
+    },
+  });
+}
+
 export function useJoinRequests() {
   return useQuery({
     queryKey: ["join-requests", "mine"],

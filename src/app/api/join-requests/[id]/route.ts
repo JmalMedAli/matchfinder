@@ -40,29 +40,44 @@ export async function PATCH(
 
   const match = joinRequest.matches as { organizer_id: string; title: string };
   if (match.organizer_id !== user.id) return jsonError("Only organizer can accept/reject", 403);
-  if (joinRequest.status !== "PENDING") return jsonError("Already processed");
 
-  if (status === "ACCEPTED") {
-    const { data: accepted, error: acceptError } = await supabase
-      .rpc("accept_join_request", {
+  if (joinRequest.status === "ACCEPTED" && status === "REJECTED") {
+    const { data: removed, error: removeError } = await supabase
+      .rpc("remove_accepted_player", {
         p_join_request_id: id,
         p_organizer_id: user.id,
       });
 
-    if (acceptError) return jsonError(acceptError.message, 500);
-    if (!accepted) return jsonError("Match is full or not open");
+    if (removeError) return jsonError(removeError.message, 500);
+    if (!removed) return jsonError("Player is not accepted or match not found");
+  } else if (joinRequest.status === "PENDING") {
+    if (status === "ACCEPTED") {
+      const { data: accepted, error: acceptError } = await supabase
+        .rpc("accept_join_request", {
+          p_join_request_id: id,
+          p_organizer_id: user.id,
+        });
+
+      if (acceptError) return jsonError(acceptError.message, 500);
+      if (!accepted) return jsonError("Match is full or not open");
+    } else {
+      const { error } = await supabase
+        .from("join_requests")
+        .update({ status: "REJECTED" })
+        .eq("id", id);
+      if (error) return jsonError(error.message, 500);
+    }
   } else {
-    const { error } = await supabase
-      .from("join_requests")
-      .update({ status: "REJECTED" })
-      .eq("id", id);
-    if (error) return jsonError(error.message, 500);
+    return jsonError("Already processed", 400);
   }
 
+  const isRemove = joinRequest.status === "ACCEPTED" && status === "REJECTED";
   await supabase.rpc("create_notification", {
     p_user_id: joinRequest.player_id,
-    p_title: `Request ${status.toLowerCase()}`,
-    p_message: `Your request to join "${match.title}" has been ${status.toLowerCase()}`,
+    p_title: isRemove ? "Removed from match" : `Request ${status.toLowerCase()}`,
+    p_message: isRemove
+      ? `You have been removed from "${match.title}"`
+      : `Your request to join "${match.title}" has been ${status.toLowerCase()}`,
     p_match_id: joinRequest.match_id,
   });
 

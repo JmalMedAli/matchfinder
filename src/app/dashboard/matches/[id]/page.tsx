@@ -4,7 +4,7 @@ import { use, useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useMatch, useDeleteMatch, useUpdateMatch } from "@/hooks/use-matches";
-import { useJoinRequest, useJoinRequests, useUpdateJoinRequest, useWithdrawJoinRequest } from "@/hooks/use-join-requests";
+import { useJoinRequest, useJoinRequests, useUpdateJoinRequest, useWithdrawJoinRequest, useRemoveAcceptedPlayer } from "@/hooks/use-join-requests";
 import { useRealtimeJoinRequests } from "@/hooks/use-realtime-join-requests";
 import { useMatchReviews, useSubmitReview } from "@/hooks/use-reviews";
 import { useMatchPhotos } from "@/hooks/use-match-photos";
@@ -61,6 +61,7 @@ export default function MatchDetailPage({
   const withdrawRequest = useWithdrawJoinRequest();
   const { data: myRequests } = useJoinRequests();
   const { mutate: updateJoinRequest, isPending: isUpdatingJoinRequest } = useUpdateJoinRequest();
+  const removeAcceptedPlayer = useRemoveAcceptedPlayer();
 
   useRealtimeJoinRequests({ matchId: id });
   const { data: field } = useFootballField(match?.football_field_id);
@@ -503,6 +504,37 @@ export default function MatchDetailPage({
                             </motion.div>
                             <motion.div whileTap={{ scale: 0.9 }}>
                               <Button size="sm" variant="destructive" onClick={() => handleRequestAction(req.id, "REJECTED")}>Reject</Button>
+                            </motion.div>
+                          </div>
+                        )}
+                        {req.status === "ACCEPTED" && (
+                          <div className="flex gap-2">
+                            <motion.div whileTap={{ scale: 0.9 }}>
+                              <Button size="sm" variant="outline" className="gap-1.5" onClick={() => setSelectedPlayerId(req.player_id)}>
+                                <Eye className="h-3.5 w-3.5" />
+                                View
+                              </Button>
+                            </motion.div>
+                            <motion.div whileTap={{ scale: 0.9 }}>
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                className="gap-1.5"
+                                disabled={removeAcceptedPlayer.isPending}
+                                onClick={() => {
+                                  if (!confirm(`Remove ${req.profiles?.name ?? "this player"} from the match?`)) return;
+                                  removeAcceptedPlayer.mutate(
+                                    { id: req.id },
+                                    {
+                                      onSuccess: () => toast.success("Player removed"),
+                                      onError: (err) => toast.error(err.message),
+                                    },
+                                  );
+                                }}
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                                {removeAcceptedPlayer.isPending ? "Removing..." : "Remove"}
+                              </Button>
                             </motion.div>
                           </div>
                         )}
