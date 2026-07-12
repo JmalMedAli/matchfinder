@@ -14,7 +14,7 @@ import { Separator } from "@/components/ui/separator";
 import { DmButton } from "@/components/dm-button";
 import {
   MapPin, Calendar, Trophy, Users, Phone, MessageCircle,
-  Globe, CheckCircle, XCircle, Loader2,
+  Globe, CheckCircle, XCircle, Loader2, Star,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { filterPublicProfile } from "@/types/profile";
@@ -24,6 +24,8 @@ interface PlayerStats {
   matchesPlayed: number;
   matchesOrganized: number;
   memberSince: string | null;
+  averageRating: number;
+  reviewCount: number;
 }
 
 interface PlayerProfileModalProps {
@@ -122,7 +124,7 @@ export function PlayerProfileModal({
                 <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
               </div>
             ) : stats && (
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 gap-3">
                 <StatCard
                   icon={<Trophy className="h-4 w-4 text-primary" />}
                   value={stats.matchesPlayed}
@@ -132,6 +134,12 @@ export function PlayerProfileModal({
                   icon={<Users className="h-4 w-4 text-primary" />}
                   value={stats.matchesOrganized}
                   label="Organized"
+                />
+                <StatCard
+                  icon={<Star className="h-4 w-4 text-amber-500" />}
+                  value={stats.averageRating > 0 ? stats.averageRating.toFixed(1) : "—"}
+                  label={`${stats.reviewCount} review${stats.reviewCount !== 1 ? "s" : ""}`}
+                  isText
                 />
                 <StatCard
                   icon={<Calendar className="h-4 w-4 text-primary" />}

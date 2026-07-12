@@ -14,7 +14,7 @@ export async function GET(
   const { id } = await params;
   if (!UUID_RE.test(id)) return NextResponse.json({ error: "Invalid ID" }, { status: 400 });
 
-  const [matchesPlayed, matchesOrganized, profile] = await Promise.all([
+  const [matchesPlayed, matchesOrganized, profile, ratingResult] = await Promise.all([
     supabase
       .from("join_requests")
       .select("id", { count: "exact", head: true })
@@ -29,11 +29,16 @@ export async function GET(
       .select("created_at")
       .eq("id", id)
       .single(),
+    supabase.rpc("get_player_rating", { p_player_id: id }),
   ]);
+
+  const ratingData = ratingResult.data?.[0];
 
   return NextResponse.json({
     matchesPlayed: matchesPlayed.count ?? 0,
     matchesOrganized: matchesOrganized.count ?? 0,
     memberSince: profile.data?.created_at ?? null,
+    averageRating: Number(ratingData?.average_rating ?? 0),
+    reviewCount: Number(ratingData?.review_count ?? 0),
   });
 }

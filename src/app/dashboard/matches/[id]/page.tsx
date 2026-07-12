@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useMatch, useDeleteMatch, useUpdateMatch } from "@/hooks/use-matches";
 import { useJoinRequest, useJoinRequests, useUpdateJoinRequest, useWithdrawJoinRequest } from "@/hooks/use-join-requests";
 import { useRealtimeJoinRequests } from "@/hooks/use-realtime-join-requests";
+import { useMatchReviews, useSubmitReview } from "@/hooks/use-reviews";
 import { useFootballField } from "@/hooks/use-football-fields";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -20,7 +21,7 @@ import { PlayerProfileModal } from "@/components/player-profile-modal";
 import {
   MapPin, ExternalLink, Phone, MessageCircle, Globe,
   Calendar, Clock, Users, ArrowLeft, Pencil, Trash2,
-  CheckCircle, XCircle, Hourglass, MessagesSquare, Eye
+  CheckCircle, XCircle, Hourglass, MessagesSquare, Eye, Star
 } from "lucide-react";
 import { filterPublicProfile } from "@/types/profile";
 import type { MatchOrganizer } from "@/hooks/use-matches";
@@ -57,6 +58,8 @@ export default function MatchDetailPage({
 
   useRealtimeJoinRequests({ matchId: id });
   const { data: field } = useFootballField(match?.football_field_id);
+  const { data: matchReviews } = useMatchReviews(id);
+  const submitReview = useSubmitReview();
   const [groupConvId, setGroupConvId] = useState<string | null>(null);
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
 
@@ -121,6 +124,7 @@ export default function MatchDetailPage({
   const isOrganizer = userId === match.organizer_id;
   const acceptedCount = (match.join_requests ?? []).filter((r: any) => r.status === "ACCEPTED").length;
   const spotsLeft = match.max_players - acceptedCount;
+  const acceptedPlayers = (match.join_requests ?? []).filter((r: any) => r.status === "ACCEPTED");
   const myRequest = myRequests?.find((r) => r.match_id === id);
   const date = new Date(match.date);
   const status = statusConfig[match.status] ?? { label: match.status, variant: "outline" as const };
@@ -491,6 +495,87 @@ export default function MatchDetailPage({
         </motion.div>
       )}
 
+      {match.status === "COMPLETED" && acceptedPlayers.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, delay: 0.25 }}
+        >
+          <Separator className="mb-6" />
+          <h2 className="text-lg font-semibold font-[family-name:var(--font-barlow-condensed)] mb-4 flex items-center gap-2">
+            <Star className="h-5 w-5 text-amber-500" />
+            Rate Players
+          </h2>
+          <div className="space-y-3">
+            {acceptedPlayers.map((req: any, i: number) => {
+              const existingReview = matchReviews?.find(
+                (r) => r.reviewer_id === userId && r.player_id === req.player_id,
+              );
+              return (
+                <ReviewCard
+                  key={req.player_id}
+                  player={req.profiles}
+                  playerId={req.player_id}
+                  matchId={id}
+                  existingReview={existingReview}
+                  onSubmit={(rating, comment) => {
+                    submitReview.mutate(
+                      { matchId: id, playerId: req.player_id, rating, comment },
+                      { onSuccess: () => toast.success("Review submitted"), onError: (err) => toast.error(err.message) },
+                    );
+                  }}
+                  isPending={submitReview.isPending}
+                  index={i}
+                />
+              );
+            })}
+          </div>
+        </motion.div>
+      )}
+
+      {match.status === "COMPLETED" && matchReviews && matchReviews.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, delay: 0.3 }}
+        >
+          <Separator className="mb-6" />
+          <h2 className="text-lg font-semibold font-[family-name:var(--font-barlow-condensed)] mb-4">
+            Reviews
+          </h2>
+          <div className="space-y-3">
+            {matchReviews.map((review, i) => (
+              <Card key={review.id}>
+                <CardContent className="p-4">
+                  <div className="flex items-start gap-3">
+                    <Avatar className="h-8 w-8 shrink-0">
+                      <AvatarImage src={review.profiles?.image ?? undefined} />
+                      <AvatarFallback>{review.profiles?.name?.[0] ?? "?"}</AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="font-medium text-sm">{review.profiles?.name ?? "Unknown"}</p>
+                        <div className="flex gap-0.5">
+                          {Array.from({ length: 5 }).map((_, si) => (
+                            <Star
+                              key={si}
+                              className={`h-3 w-3 ${si < review.rating ? "fill-amber-500 text-amber-500" : "text-muted-foreground/30"}`}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                      {review.comment && (
+                        <p className="text-sm text-muted-foreground mt-1">{review.comment}</p>
+                      )}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </motion.div>
+      )}
+
       {selectedPlayerId && match.join_requests && (
         <PlayerProfileModal
           open={!!selectedPlayerId}
@@ -566,5 +651,110 @@ function ContactLinks({
         );
       })}
     </div>
+  );
+}
+
+function ReviewCard({
+  player,
+  playerId,
+  matchId,
+  existingReview,
+  onSubmit,
+  isPending,
+  index,
+}: {
+  player: any;
+  playerId: string;
+  matchId: string;
+  existingReview: any;
+  onSubmit: (rating: number, comment: string) => void;
+  isPending: boolean;
+  index: number;
+}) {
+  const [rating, setRating] = useState(0);
+  const [comment, setComment] = useState("");
+  const [hoveredStar, setHoveredStar] = useState(0);
+
+  if (existingReview) {
+    return (
+      <Card className="border-primary/20 bg-primary/5">
+        <CardContent className="p-4">
+          <div className="flex items-center gap-3">
+            <Avatar className="h-9 w-9">
+              <AvatarImage src={player?.image ?? undefined} />
+              <AvatarFallback>{player?.name?.[0] ?? "?"}</AvatarFallback>
+            </Avatar>
+            <div className="flex-1 min-w-0">
+              <p className="font-medium text-sm">{player?.name ?? "Unknown"}</p>
+              <div className="flex gap-0.5 mt-1">
+                {Array.from({ length: 5 }).map((_, si) => (
+                  <Star
+                    key={si}
+                    className={`h-3.5 w-3.5 ${si < existingReview.rating ? "fill-amber-500 text-amber-500" : "text-muted-foreground/30"}`}
+                  />
+                ))}
+              </div>
+            </div>
+            <Badge variant="secondary" className="text-xs">Reviewed</Badge>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card>
+      <CardContent className="p-4 space-y-3">
+        <div className="flex items-center gap-3">
+          <Avatar className="h-9 w-9">
+            <AvatarImage src={player?.image ?? undefined} />
+            <AvatarFallback>{player?.name?.[0] ?? "?"}</AvatarFallback>
+          </Avatar>
+          <div>
+            <p className="font-medium text-sm">{player?.name ?? "Unknown"}</p>
+            {player?.position && (
+              <p className="text-xs text-muted-foreground">{player.position}</p>
+            )}
+          </div>
+        </div>
+        <div className="flex gap-1">
+          {Array.from({ length: 5 }).map((_, si) => (
+            <button
+              key={si}
+              type="button"
+              onMouseEnter={() => setHoveredStar(si + 1)}
+              onMouseLeave={() => setHoveredStar(0)}
+              onClick={() => setRating(si + 1)}
+              className="p-0.5"
+            >
+              <Star
+                className={`h-5 w-5 transition-colors ${
+                  si < (hoveredStar || rating)
+                    ? "fill-amber-500 text-amber-500"
+                    : "text-muted-foreground/30 hover:text-muted-foreground/50"
+                }`}
+              />
+            </button>
+          ))}
+          {rating > 0 && <span className="text-sm text-muted-foreground ml-1">{rating}/5</span>}
+        </div>
+        <textarea
+          className="w-full text-sm border rounded-lg p-2 bg-background resize-none"
+          rows={2}
+          placeholder="Optional comment..."
+          value={comment}
+          onChange={(e) => setComment(e.target.value)}
+        />
+        <Button
+          size="sm"
+          disabled={rating === 0 || isPending}
+          onClick={() => onSubmit(rating, comment)}
+          className="gap-1.5"
+        >
+          <Star className="h-3.5 w-3.5" />
+          {isPending ? "Submitting..." : "Submit Review"}
+        </Button>
+      </CardContent>
+    </Card>
   );
 }
