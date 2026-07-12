@@ -44,6 +44,12 @@ export function FootballFieldSelector({
     }
   }, [open]);
 
+  useEffect(() => {
+    if (!value && !open) {
+      setOpen(true);
+    }
+  }, []);
+
   if (!open && value) {
     return (
       <div className="space-y-2">
