@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { NavSidebar } from "@/components/nav-sidebar";
+import { NavSidebar, MobileHeader } from "@/components/nav-sidebar";
 import { BottomNav } from "@/components/bottom-nav";
 import { useRealtimeNotifications } from "@/hooks/use-realtime-notifications";
 import { useMatchReminders } from "@/hooks/use-match-reminders";
@@ -57,10 +57,19 @@ export default function DashboardLayout({
 
   return (
     <div className="flex min-h-screen">
+      {/* Desktop sidebar */}
       <NavSidebar userId={userId} onUnreadCountChange={handleUnreadChange} unreadVersion={unreadVersion} />
-      <main className="flex-1 min-w-0">
-        <div className="container mx-auto px-4 pt-4 pb-24 md:p-6 md:pb-6">{children}</div>
-      </main>
+
+      <div className="flex-1 min-w-0 flex flex-col">
+        {/* Mobile header — replaces hamburger */}
+        <MobileHeader userId={userId} onUnreadCountChange={handleUnreadChange} unreadVersion={unreadVersion} />
+
+        <main className="flex-1">
+          <div className="container mx-auto px-4 pt-4 pb-24 md:p-6 md:pb-6">{children}</div>
+        </main>
+      </div>
+
+      {/* Bottom nav — mobile only */}
       <BottomNav />
     </div>
   );
