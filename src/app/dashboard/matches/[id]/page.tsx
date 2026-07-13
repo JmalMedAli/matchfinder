@@ -22,6 +22,7 @@ import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DmButton } from "@/components/dm-button";
 import { PlayerProfileModal } from "@/components/player-profile-modal";
+import { ShareMatch } from "@/components/share-match";
 import {
   MapPin, ExternalLink, Phone, MessageCircle, Globe,
   Calendar, Clock, Users, ArrowLeft, Pencil, Trash2,
@@ -252,6 +253,11 @@ export default function MatchDetailPage({
         <Link href="/dashboard/my-matches" className="absolute top-4 left-4 z-10 h-9 w-9 rounded-full bg-black/30 backdrop-blur-sm flex items-center justify-center">
           <ArrowLeft className="h-4.5 w-4.5 text-white" />
         </Link>
+
+        {/* Share button */}
+        <div className="absolute top-4 left-14 z-10">
+          <ShareMatch title={match.title} date={match.date} location={match.location} matchId={id} />
+        </div>
 
         {/* Organizer actions */}
         {isOrganizer && match.status !== "ARCHIVED" && (
