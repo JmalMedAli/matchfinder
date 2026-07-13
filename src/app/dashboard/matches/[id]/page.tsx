@@ -25,6 +25,8 @@ import { PlayerProfileModal } from "@/components/player-profile-modal";
 import { ShareMatch } from "@/components/share-match";
 import { MatchCountdown } from "@/components/match-countdown";
 import { PostMatchReviewPrompt } from "@/components/post-match-review-prompt";
+import { MatchCheckin } from "@/components/match-checkin";
+import { FavoriteButton } from "@/components/favorite-button";
 import { useMutation } from "@tanstack/react-query";
 import {
   MapPin, ExternalLink, Phone, MessageCircle, Globe,
@@ -204,6 +206,7 @@ export default function MatchDetailPage({
   const acceptedPlayers = (match.join_requests ?? []).filter((r: any) => r.status === "ACCEPTED");
   const pendingPlayers = (match.join_requests ?? []).filter((r: any) => r.status === "PENDING");
   const myRequest = myRequests?.find((r) => r.match_id === id);
+  const isAccepted = myRequest?.status === "ACCEPTED";
   const date = new Date(match.date);
   const dot = statusDot[match.status] ?? "bg-muted-foreground/20";
 
@@ -470,6 +473,7 @@ export default function MatchDetailPage({
                         <p className="text-sm font-medium truncate">{req.profiles?.name ?? "Unknown"}</p>
                         <p className="text-xs text-muted-foreground">{reqStatusLabel}</p>
                       </div>
+                      <FavoriteButton playerId={req.player_id} />
                       {req.status === "PENDING" && (
                         <div className="flex gap-1.5">
                           <Button size="sm" className="h-8 px-3 text-xs" onClick={() => handleRequestAction(req.id, "ACCEPTED")}>Accept</Button>
@@ -519,6 +523,15 @@ export default function MatchDetailPage({
                 </div>
               </div>
             </Link>
+          </motion.div>
+        )}
+
+        {/* Check-in */}
+        {(match.status === "OPEN" || match.status === "FULL" || match.status === "CLOSED") && isAccepted && (
+          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.34 }}>
+            <CollapsibleSection title="Check In" icon={<CheckCircle className="h-4 w-4 text-green-500" />} defaultOpen={false}>
+              <MatchCheckin matchId={id} isOrganizer={isOrganizer} />
+            </CollapsibleSection>
           </motion.div>
         )}
 

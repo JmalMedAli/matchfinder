@@ -5,12 +5,13 @@ import { useQuery } from "@tanstack/react-query";
 import { useGeolocation } from "@/hooks/use-geolocation";
 import { haversineDistance } from "@/lib/geo";
 import { NearbyMatchCard } from "@/components/nearby-match-card";
+import { MatchMapView } from "@/components/match-map-view";
 import { DistanceFilter } from "@/components/distance-filter";
 import { CityFallback } from "@/components/city-fallback";
 import { PositionFilter } from "@/components/position-filter";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { MapPin, LocateOff, RefreshCw, Compass, Search } from "lucide-react";
+import { MapPin, LocateOff, RefreshCw, Compass, Search, Map, List } from "lucide-react";
 import type { Match } from "@/hooks/use-matches";
 import { motion } from "framer-motion";
 
@@ -30,6 +31,7 @@ export default function NearbyPage() {
   const [radiusKm, setRadiusKm] = useState<number | null>(null);
   const [cityFilter, setCityFilter] = useState<string | null>(null);
   const [positionFilter, setPositionFilter] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<"list" | "map">("list");
 
   const { data, isPending, error } = useQuery({
     queryKey: ["matches", "open-all"],
@@ -137,7 +139,7 @@ export default function NearbyPage() {
       )}
 
       {/* ── Filter Chips ── */}
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         {hasLocation && (
           <DistanceFilter selected={radiusKm} onSelect={setRadiusKm} />
         )}
@@ -145,6 +147,14 @@ export default function NearbyPage() {
           <CityFallback value={cityFilter} onChange={setCityFilter} />
         )}
         <PositionFilter selected={positionFilter} onSelect={setPositionFilter} />
+        <div className="flex items-center border rounded-xl overflow-hidden ml-auto">
+          <button onClick={() => setViewMode("list")} className={`p-1.5 ${viewMode === "list" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}>
+            <List className="h-4 w-4" />
+          </button>
+          <button onClick={() => setViewMode("map")} className={`p-1.5 ${viewMode === "map" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}>
+            <Map className="h-4 w-4" />
+          </button>
+        </div>
       </div>
 
       {hasLocation && (
@@ -195,16 +205,35 @@ export default function NearbyPage() {
           )}
         </div>
       ) : (
-        <div className="space-y-3">
-          {filteredMatches.map(({ match, distance }, i) => (
-            <NearbyMatchCard
-              key={match.id}
-              match={match}
-              distanceKm={distance === Infinity ? 0 : distance}
-              index={i}
-            />
-          ))}
-        </div>
+        viewMode === "map" ? (
+          <MatchMapView
+            center={lat != null && lng != null ? [lat, lng] : undefined}
+            matches={filteredMatches.map(({ match, distance }) => ({
+              id: match.id,
+              title: match.title,
+              date: match.date,
+              max_players: match.max_players,
+              accepted_count: match.join_requests?.filter((r: any) => r.status === "ACCEPTED").length ?? 0,
+              lat: match.football_fields?.latitude ?? 0,
+              lng: match.football_fields?.longitude ?? 0,
+              field_name: match.football_fields?.name ?? match.location,
+              city: match.football_fields?.city ?? "",
+              position_needed: match.position_needed,
+              status: match.status,
+            })).filter((m) => m.lat && m.lng)}
+          />
+        ) : (
+          <div className="space-y-3">
+            {filteredMatches.map(({ match, distance }, i) => (
+              <NearbyMatchCard
+                key={match.id}
+                match={match}
+                distanceKm={distance === Infinity ? 0 : distance}
+                index={i}
+              />
+            ))}
+          </div>
+        )
       )}
     </motion.div>
   );

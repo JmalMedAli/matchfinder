@@ -9,10 +9,12 @@ import { createClient } from "@/lib/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { PlayerLeaderboard } from "@/components/player-leaderboard";
+import { ActivityFeed } from "@/components/activity-feed";
 import {
   Calendar, MapPin, Plus, Users, ChevronRight,
   Shield, Clock, CheckCircle, Hourglass, XCircle, Zap,
-  ArrowRight, Search, List
+  ArrowRight, Search, List, Trophy, Activity
 } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -257,6 +259,38 @@ export default function DashboardPage() {
               </div>
             </motion.section>
           )}
+
+          {/* ── Leaderboard ── */}
+          <motion.section
+            className="mb-5"
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3, delay: 0.35 }}
+          >
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                <Trophy className="h-3.5 w-3.5 text-amber-500" />
+                Top Players
+              </h2>
+            </div>
+            <PlayerLeaderboard />
+          </motion.section>
+
+          {/* ── Activity Feed ── */}
+          <motion.section
+            className="mb-5"
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3, delay: 0.4 }}
+          >
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                <Activity className="h-3.5 w-3.5 text-primary" />
+                Recent Activity
+              </h2>
+            </div>
+            <ActivityFeed />
+          </motion.section>
 
           {/* ── Empty State ── */}
           {organizing.length === 0 && acceptedRequests.length === 0 && pendingIncoming.length === 0 && pendingRequests.length === 0 && nearby.length === 0 && (
