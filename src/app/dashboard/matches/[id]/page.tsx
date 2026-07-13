@@ -378,19 +378,33 @@ export default function MatchDetailPage({
         {acceptedPlayers.length > 0 && (
           <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.25 }}>
             <CollapsibleSection
-              title="Players"
+              title="Joined Players"
               icon={<Users className="h-4 w-4 text-green-500" />}
               count={acceptedCount}
             >
-              <div className="flex flex-wrap gap-2">
+              <div className="space-y-2">
                 {acceptedPlayers.map((r: any) => (
-                  <button key={r.player_id} type="button" onClick={() => setSelectedPlayerId(r.player_id)} className="flex items-center gap-2 bg-muted/50 rounded-full pl-1 pr-3 py-1 active:scale-95 transition-transform">
-                    <Avatar className="h-6 w-6">
-                      <AvatarImage src={r.profiles?.image ?? undefined} />
-                      <AvatarFallback className="text-[10px]">{r.profiles?.name?.[0] ?? "?"}</AvatarFallback>
-                    </Avatar>
-                    <span className="text-xs font-medium">{r.profiles?.name ?? "Player"}</span>
-                  </button>
+                  <div key={r.player_id} className="flex items-center gap-3 p-2.5 rounded-xl bg-muted/30">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedPlayerId(r.player_id)}
+                      className="flex items-center gap-3 flex-1 min-w-0 active:scale-[0.98] transition-transform"
+                    >
+                      <Avatar className="h-10 w-10 shrink-0">
+                        <AvatarImage src={r.profiles?.image ?? undefined} />
+                        <AvatarFallback className="text-xs">{r.profiles?.name?.[0] ?? "?"}</AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0 text-left">
+                        <p className="text-sm font-medium truncate">{r.profiles?.name ?? "Player"}</p>
+                        {r.profiles?.position && (
+                          <p className="text-[11px] text-muted-foreground">{r.profiles.position}</p>
+                        )}
+                      </div>
+                    </button>
+                    {!isOrganizer && r.player_id !== userId && (
+                      <DmButton targetId={r.player_id} targetName={r.profiles?.name ?? undefined} size="sm" variant="ghost" />
+                    )}
+                  </div>
                 ))}
               </div>
             </CollapsibleSection>
