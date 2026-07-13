@@ -84,7 +84,7 @@ export async function PATCH(
   }
   if (body.status !== undefined) {
     const s = String(body.status);
-    if (!["OPEN", "FULL", "CLOSED", "COMPLETED"].includes(s)) return jsonError("Invalid status value");
+    if (!["OPEN", "FULL", "CLOSED", "COMPLETED", "ARCHIVED"].includes(s)) return jsonError("Invalid status value");
     data.status = s;
   }
 

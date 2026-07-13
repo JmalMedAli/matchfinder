@@ -42,7 +42,7 @@ export interface Match {
   location: string;
   football_field_id: string | null;
   max_players: number;
-  status: "OPEN" | "FULL" | "CLOSED" | "COMPLETED";
+  status: "OPEN" | "FULL" | "CLOSED" | "COMPLETED" | "ARCHIVED";
   created_at: string;
   updated_at: string;
   organizer_id: string;

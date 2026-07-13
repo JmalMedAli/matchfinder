@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import {
   ChevronRight, List, Shield, Bell, Star, Settings,
-  HelpCircle, LogOut, Pencil, MapPin, Calendar
+  HelpCircle, LogOut, Pencil, MapPin, Calendar, Archive
 } from "lucide-react";
 
 const menuSections = [
@@ -18,6 +18,7 @@ const menuSections = [
     items: [
       { href: "/dashboard/my-matches", label: "My Matches", icon: List, description: "Matches you joined" },
       { href: "/dashboard/my-matches", label: "Organizing", icon: Shield, description: "Matches you created" },
+      { href: "/dashboard/archived", label: "Archived Matches", icon: Archive, description: "Hidden matches" },
       { href: "/dashboard/notifications", label: "Notifications", icon: Bell, description: "Alerts and updates" },
     ],
   },

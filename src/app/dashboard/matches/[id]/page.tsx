@@ -26,17 +26,18 @@ import {
   MapPin, ExternalLink, Phone, MessageCircle, Globe,
   Calendar, Clock, Users, ArrowLeft, Pencil, Trash2,
   CheckCircle, XCircle, Hourglass, MessagesSquare, Eye, Star,
-  ChevronDown, ChevronUp
+  ChevronDown, ChevronUp, Archive, RotateCcw
 } from "lucide-react";
 import { filterPublicProfile } from "@/types/profile";
 import type { MatchOrganizer } from "@/hooks/use-matches";
 import { motion, AnimatePresence } from "framer-motion";
 
-const statusDot: Record<string, string> = {
+  const statusDot: Record<string, string> = {
   OPEN: "bg-green-500",
   FULL: "bg-amber-500",
   CLOSED: "bg-red-500",
   COMPLETED: "bg-muted-foreground/40",
+  ARCHIVED: "bg-muted-foreground/20",
 };
 
 const requestStatusConfig: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline"; icon: typeof CheckCircle }> = {
@@ -186,11 +187,25 @@ export default function MatchDetailPage({
   const dot = statusDot[match.status] ?? "bg-muted-foreground/20";
 
   function handleDelete() {
-    if (!confirm("Delete this match?")) return;
+    if (!confirm("Permanently delete this match? This cannot be undone.")) return;
     deleteMatch.mutate(id, {
       onSuccess: () => { toast.success("Match deleted"); router.push("/dashboard/my-matches"); },
       onError: (err) => toast.error(err.message),
     });
+  }
+
+  function handleArchive() {
+    updateMatch.mutate(
+      { id, data: { status: "ARCHIVED" } },
+      { onSuccess: () => toast.success("Match archived"), onError: (err) => toast.error(err.message) },
+    );
+  }
+
+  function handleRestore() {
+    updateMatch.mutate(
+      { id, data: { status: "OPEN" } },
+      { onSuccess: () => toast.success("Match restored"), onError: (err) => toast.error(err.message) },
+    );
   }
 
   function handleStatusChange(status: string) {
@@ -239,14 +254,11 @@ export default function MatchDetailPage({
         </Link>
 
         {/* Organizer actions */}
-        {isOrganizer && (
+        {isOrganizer && match.status !== "ARCHIVED" && (
           <div className="absolute top-4 right-4 z-10 flex gap-2">
             <Link href={`/dashboard/matches/${id}/edit`} className="h-9 w-9 rounded-full bg-black/30 backdrop-blur-sm flex items-center justify-center">
               <Pencil className="h-4 w-4 text-white" />
             </Link>
-            <button type="button" onClick={handleDelete} className="h-9 w-9 rounded-full bg-black/30 backdrop-blur-sm flex items-center justify-center" disabled={deleteMatch.isPending}>
-              <Trash2 className="h-4 w-4 text-white" />
-            </button>
           </div>
         )}
 
@@ -543,13 +555,43 @@ export default function MatchDetailPage({
           {isOrganizer && (
             <div className="flex gap-2">
               {match.status === "OPEN" && (
-                <Button size="sm" variant="outline" className="flex-1" onClick={() => handleStatusChange("CLOSED")}>Close</Button>
+                <>
+                  <Button size="sm" variant="outline" className="flex-1" onClick={() => handleStatusChange("CLOSED")}>Close</Button>
+                  <Button size="sm" variant="outline" className="flex-1 gap-1.5" onClick={handleArchive}>
+                    <Archive className="h-3.5 w-3.5" />
+                    Archive
+                  </Button>
+                </>
               )}
               {match.status === "CLOSED" && (
-                <Button size="sm" variant="outline" className="flex-1" onClick={() => handleStatusChange("OPEN")}>Reopen</Button>
+                <>
+                  <Button size="sm" variant="outline" className="flex-1" onClick={() => handleStatusChange("OPEN")}>Reopen</Button>
+                  <Button size="sm" variant="outline" className="flex-1 gap-1.5" onClick={handleArchive}>
+                    <Archive className="h-3.5 w-3.5" />
+                    Archive
+                  </Button>
+                </>
               )}
-              {match.status !== "COMPLETED" && (
+              {match.status === "FULL" && (
+                <Button size="sm" variant="outline" className="flex-1 gap-1.5" onClick={handleArchive}>
+                  <Archive className="h-3.5 w-3.5" />
+                  Archive
+                </Button>
+              )}
+              {match.status !== "COMPLETED" && match.status !== "ARCHIVED" && (
                 <Button size="sm" className="flex-1" onClick={() => handleStatusChange("COMPLETED")}>Complete</Button>
+              )}
+              {match.status === "ARCHIVED" && (
+                <>
+                  <Button size="sm" variant="outline" className="flex-1 gap-1.5" onClick={handleRestore}>
+                    <RotateCcw className="h-3.5 w-3.5" />
+                    Restore
+                  </Button>
+                  <Button size="sm" variant="destructive" className="flex-1 gap-1.5" onClick={handleDelete} disabled={deleteMatch.isPending}>
+                    <Trash2 className="h-3.5 w-3.5" />
+                    Delete
+                  </Button>
+                </>
               )}
             </div>
           )}

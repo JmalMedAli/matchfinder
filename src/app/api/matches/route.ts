@@ -32,7 +32,7 @@ export async function GET(req: NextRequest) {
     .order("date", { ascending: true })
     .range((page - 1) * pageSize, page * pageSize - 1);
 
-  if (status && ["OPEN", "FULL", "CLOSED", "COMPLETED"].includes(status)) {
+  if (status && ["OPEN", "FULL", "CLOSED", "COMPLETED", "ARCHIVED"].includes(status)) {
     query = query.eq("status", status);
   }
   if (search) {
