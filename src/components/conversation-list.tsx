@@ -35,10 +35,12 @@ function getInitials(name: string | null) {
 export function ConversationList({ conversations }: { conversations: Conversation[] }) {
   if (conversations.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-16 text-center">
-        <MessageCircle className="h-12 w-12 text-muted-foreground/30 mb-3" />
-        <p className="text-muted-foreground">No conversations yet</p>
-        <p className="text-sm text-muted-foreground/60 mt-1">
+      <div className="flex flex-col items-center justify-center py-16 text-center px-4">
+        <div className="h-14 w-14 rounded-2xl bg-muted flex items-center justify-center mb-3">
+          <MessageCircle className="h-7 w-7 text-muted-foreground/30" />
+        </div>
+        <p className="font-medium text-muted-foreground">No conversations yet</p>
+        <p className="text-sm text-muted-foreground/60 mt-0.5">
           Start a DM or join a match to chat
         </p>
       </div>
@@ -61,9 +63,9 @@ export function ConversationList({ conversations }: { conversations: Conversatio
           <Link
             key={conv.id}
             href={`/dashboard/conversations/${conv.id}`}
-            className="flex items-center gap-3 px-4 py-3 hover:bg-muted/50 transition-colors"
+            className="flex items-center gap-3 px-4 py-3.5 active:bg-muted/50 transition-colors"
           >
-            <Avatar className="h-10 w-10 shrink-0">
+            <Avatar className="h-11 w-11 shrink-0">
               <AvatarImage src={avatar ?? undefined} />
               <AvatarFallback className={isDM ? "" : "bg-primary/10 text-primary"}>
                 {isDM ? getInitials(displayName) : <Users className="h-4 w-4" />}
@@ -74,7 +76,7 @@ export function ConversationList({ conversations }: { conversations: Conversatio
               <div className="flex items-center justify-between gap-2">
                 <p className="font-medium text-sm truncate">{displayName}</p>
                 {lastMsg && (
-                  <span className="text-xs text-muted-foreground shrink-0">
+                  <span className="text-[11px] text-muted-foreground/60 shrink-0">
                     {formatTime(lastMsg.created_at)}
                   </span>
                 )}
@@ -88,16 +90,16 @@ export function ConversationList({ conversations }: { conversations: Conversatio
                       : `${participantCount} participants`}
                 </p>
                 {unread > 0 && (
-                  <Badge className="h-5 min-w-5 px-1 text-[10px] shrink-0">
+                  <Badge className="h-5 min-w-5 px-1 text-[10px] shrink-0 rounded-full">
                     {unread > 99 ? "99+" : unread}
                   </Badge>
                 )}
               </div>
               {!isDM && (
                 <div className="flex items-center gap-1 mt-0.5">
-                  <Users className="h-3 w-3 text-muted-foreground/60" />
-                  <span className="text-[11px] text-muted-foreground/60">
-                    {participantCount} participant{participantCount !== 1 ? "s" : ""}
+                  <Users className="h-3 w-3 text-muted-foreground/50" />
+                  <span className="text-[11px] text-muted-foreground/50">
+                    {participantCount} member{participantCount !== 1 ? "s" : ""}
                   </span>
                 </div>
               )}

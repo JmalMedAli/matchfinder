@@ -1,10 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { MapPin, Clock, Users, Navigation } from "lucide-react";
+import { MapPin, Clock, Users, Navigation, ChevronRight } from "lucide-react";
 import type { Match } from "@/hooks/use-matches";
 import { estimateTravelTime } from "@/lib/geo";
 import { motion } from "framer-motion";
@@ -24,63 +22,58 @@ export function NearbyMatchCard({ match, distanceKm, index = 0 }: NearbyMatchCar
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20, scale: 0.97 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      transition={{ duration: 0.4, delay: index * 0.06, ease: [0.25, 0.46, 0.45, 0.94] }}
-      whileHover={{ y: -4 }}
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3, delay: index * 0.05 }}
     >
-      <Card className="hover:shadow-lg hover:border-primary/20 transition-all duration-300 h-full">
-        <CardContent className="p-4 space-y-3">
-          <div className="flex items-start justify-between gap-2">
-            <h3 className="font-semibold text-base line-clamp-1">{match.title}</h3>
-            <Badge variant={match.status === "OPEN" ? "default" : "secondary"}>
-              {match.status}
-            </Badge>
-          </div>
-
-          <div className="flex flex-wrap gap-x-4 gap-y-1.5 text-sm text-muted-foreground">
-            <span className="flex items-center gap-1">
-              <Clock className="h-3.5 w-3.5" />
-              {date.toLocaleDateString(undefined, {
-                weekday: "short",
-                month: "short",
-                day: "numeric",
-              })}{" "}
-              {date.toLocaleTimeString(undefined, {
-                hour: "2-digit",
-                minute: "2-digit",
-              })}
+      <Link href={`/dashboard/matches/${match.id}`} className="block active:scale-[0.98] transition-transform">
+        <div className="flex items-center gap-3.5 p-3.5 bg-card border rounded-2xl hover:shadow-md hover:border-primary/20 transition-all">
+          {/* Date pill */}
+          <div className="h-14 w-14 rounded-xl bg-primary/10 flex flex-col items-center justify-center shrink-0">
+            <span className="text-[10px] font-semibold text-primary uppercase leading-tight">
+              {date.toLocaleDateString("en", { month: "short" })}
             </span>
-            <span className="flex items-center gap-1">
-              <MapPin className="h-3.5 w-3.5" />
-              {match.football_fields?.city ?? match.location}
-            </span>
-            <span className="flex items-center gap-1">
-              <Users className="h-3.5 w-3.5" />
-              {spotsLeft > 0 ? `${spotsLeft} spots left` : "Full"}
+            <span className="text-lg font-bold text-primary leading-tight">
+              {date.getDate()}
             </span>
           </div>
 
-          <div className="flex items-center gap-3 text-sm">
-            <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 text-primary px-2.5 py-0.5 font-medium">
-              <Navigation className="h-3 w-3" />
-              {distanceKm < 1
-                ? `${Math.round(distanceKm * 1000)} m`
-                : `${distanceKm.toFixed(1)} km`}
-            </span>
-            <span className="text-muted-foreground">
-              ~{estimateTravelTime(distanceKm)} by car
-            </span>
+          {/* Info */}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-0.5">
+              <h3 className="font-semibold text-sm truncate">{match.title}</h3>
+              <Badge variant={spotsLeft > 0 ? "default" : "secondary"} className="shrink-0 text-[10px] h-5">
+                {spotsLeft > 0 ? `${spotsLeft} spots` : "Full"}
+              </Badge>
+            </div>
+            <div className="flex items-center gap-3 text-xs text-muted-foreground">
+              <span className="flex items-center gap-1">
+                <Clock className="h-3 w-3" />
+                {date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+              </span>
+              <span className="flex items-center gap-1">
+                <MapPin className="h-3 w-3" />
+                {match.football_fields?.city ?? match.location}
+              </span>
+            </div>
+            {distanceKm > 0 && (
+              <div className="flex items-center gap-2 mt-1">
+                <span className="inline-flex items-center gap-1 text-[11px] font-medium text-primary bg-primary/10 rounded-full px-2 py-0.5">
+                  <Navigation className="h-2.5 w-2.5" />
+                  {distanceKm < 1
+                    ? `${Math.round(distanceKm * 1000)} m`
+                    : `${distanceKm.toFixed(1)} km`}
+                </span>
+                <span className="text-[11px] text-muted-foreground">
+                  ~{estimateTravelTime(distanceKm)}
+                </span>
+              </div>
+            )}
           </div>
-        </CardContent>
-        <CardFooter className="p-4 pt-0">
-          <Link href={`/dashboard/matches/${match.id}`} className="w-full">
-            <Button variant="outline" className="w-full" size="sm">
-              View details
-            </Button>
-          </Link>
-        </CardFooter>
-      </Card>
+
+          <ChevronRight className="h-4 w-4 text-muted-foreground/40 shrink-0" />
+        </div>
+      </Link>
     </motion.div>
   );
 }

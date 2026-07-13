@@ -14,19 +14,19 @@ export default function ConversationDetailPage({
   const { id } = use(params);
 
   return (
-    <div className="max-w-2xl h-[calc(100vh-8rem)] md:h-[calc(100vh-3rem)] flex flex-col">
+    <div className="h-[calc(100dvh-8rem)] md:h-[calc(100vh-3rem)] flex flex-col -mx-4 md:mx-0">
+      {/* ── Mobile Back Bar ── */}
       <motion.div
-        initial={{ opacity: 0, y: -10 }}
+        initial={{ opacity: 0, y: -8 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3 }}
-        className="pb-2"
+        transition={{ duration: 0.2 }}
+        className="flex items-center gap-3 px-4 py-2.5 border-b md:border-0 md:px-0 md:py-0 md:mb-2"
       >
         <Link
           href="/dashboard/conversations"
-          className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+          className="h-8 w-8 rounded-full bg-muted flex items-center justify-center active:scale-95 transition-transform"
         >
           <ArrowLeft className="h-4 w-4" />
-          Back to conversations
         </Link>
       </motion.div>
 

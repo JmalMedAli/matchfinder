@@ -109,18 +109,25 @@ export function ChatView({ conversationId }: ChatViewProps) {
   }
 
   return (
-    <div className="flex flex-col h-[calc(100vh-8rem)] md:h-[calc(100vh-3rem)]">
+    <div className="flex flex-col h-[calc(100dvh-8rem)] md:h-[calc(100vh-3rem)]">
       <div
         ref={containerRef}
-        className="flex-1 overflow-y-auto px-4 py-4 space-y-3"
+        className="flex-1 overflow-y-auto px-4 py-3 space-y-2.5"
       >
         {hasNextPage && (
           <button
             onClick={handleLoadOlder}
             disabled={isFetchingNextPage}
-            className="mx-auto block text-xs text-muted-foreground hover:text-foreground transition-colors py-2"
+            className="mx-auto block text-xs text-muted-foreground/60 hover:text-foreground transition-colors py-2 active:scale-95"
           >
-            {isFetchingNextPage ? "Loading..." : "Load older messages"}
+            {isFetchingNextPage ? (
+              <span className="flex items-center gap-1.5">
+                <span className="h-3 w-3 animate-spin rounded-full border border-primary border-t-transparent" />
+                Loading...
+              </span>
+            ) : (
+              "Load older messages"
+            )}
           </button>
         )}
 

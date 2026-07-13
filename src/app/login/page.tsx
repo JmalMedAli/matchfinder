@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { PhoneAuth } from "@/components/phone-auth";
-import { Trophy, Mail, Phone } from "lucide-react";
+import { Trophy, Mail, Phone, ArrowLeft } from "lucide-react";
 import { motion } from "framer-motion";
 
 export default function LoginPage() {
@@ -53,6 +53,7 @@ export default function LoginPage() {
 
   return (
     <div className="flex min-h-screen">
+      {/* ── Desktop Hero ── */}
       <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden items-center justify-center">
         <video
           className="absolute inset-0 h-full w-full object-cover"
@@ -78,32 +79,41 @@ export default function LoginPage() {
         </div>
       </div>
 
-      <div className="flex-1 flex items-center justify-center px-4 py-12">
+      {/* ── Form Side ── */}
+      <div className="flex-1 flex flex-col justify-center px-6 py-10">
         <motion.div
-          className="w-full max-w-sm space-y-6"
-          initial={{ opacity: 0, y: 20 }}
+          className="w-full max-w-sm mx-auto space-y-6"
+          initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}
         >
-          <div className="lg:hidden text-center mb-8">
-            <Link href="/" className="inline-flex items-center gap-2 mb-6">
-              <div className="h-10 w-10 rounded-xl bg-primary flex items-center justify-center">
-                <Trophy className="h-6 w-6 text-primary-foreground" />
+          {/* Mobile logo */}
+          <div className="lg:hidden flex flex-col items-center mb-4">
+            <Link href="/" className="mb-6">
+              <div className="h-12 w-12 rounded-2xl bg-primary flex items-center justify-center shadow-lg shadow-primary/25">
+                <Trophy className="h-7 w-7 text-primary-foreground" />
               </div>
-              <span className="text-2xl font-bold font-[family-name:var(--font-barlow-condensed)]">
-                MatchFinder
-              </span>
             </Link>
+            <h1 className="text-2xl font-bold font-[family-name:var(--font-barlow-condensed)]">
+              Welcome back
+            </h1>
+            <p className="text-sm text-muted-foreground mt-1">Sign in to continue</p>
           </div>
 
-          <div>
+          {/* Desktop heading */}
+          <div className="hidden lg:block">
             <h1 className="text-2xl font-bold">Log in</h1>
             <p className="text-sm text-muted-foreground mt-1">
               Enter your credentials to continue.
             </p>
           </div>
 
-          <Button variant="outline" className="w-full gap-2" onClick={handleGoogle}>
+          {/* Google button */}
+          <Button
+            variant="outline"
+            className="w-full h-12 gap-2.5 rounded-xl text-base font-medium"
+            onClick={handleGoogle}
+          >
             <svg className="h-5 w-5" viewBox="0 0 24 24">
               <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/>
               <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
@@ -113,22 +123,24 @@ export default function LoginPage() {
             Continue with Google
           </Button>
 
+          {/* Divider */}
           <div className="relative">
             <div className="absolute inset-0 flex items-center">
               <span className="w-full border-t" />
             </div>
             <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-background px-2 text-muted-foreground">
-                Or continue with
-              </span>
+              <span className="bg-background px-2 text-muted-foreground">Or</span>
             </div>
           </div>
 
-          <div className="flex rounded-lg border overflow-hidden">
+          {/* Auth method toggle */}
+          <div className="flex rounded-xl border overflow-hidden bg-muted/30 p-0.5">
             <button
               type="button"
-              className={`flex-1 py-2.5 text-sm font-medium transition-colors flex items-center justify-center gap-2 ${
-                authMethod === "email" ? "bg-primary text-primary-foreground" : "hover:bg-muted"
+              className={`flex-1 py-2.5 text-sm font-medium rounded-lg transition-all flex items-center justify-center gap-2 ${
+                authMethod === "email"
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground"
               }`}
               onClick={() => setAuthMethod("email")}
             >
@@ -137,8 +149,10 @@ export default function LoginPage() {
             </button>
             <button
               type="button"
-              className={`flex-1 py-2.5 text-sm font-medium transition-colors flex items-center justify-center gap-2 ${
-                authMethod === "phone" ? "bg-primary text-primary-foreground" : "hover:bg-muted"
+              className={`flex-1 py-2.5 text-sm font-medium rounded-lg transition-all flex items-center justify-center gap-2 ${
+                authMethod === "phone"
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground"
               }`}
               onClick={() => setAuthMethod("phone")}
             >
@@ -150,7 +164,7 @@ export default function LoginPage() {
           {authMethod === "email" ? (
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email" className="text-sm">Email</Label>
                 <Input
                   id="email"
                   type="email"
@@ -158,11 +172,11 @@ export default function LoginPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
-                  className="h-11"
+                  className="h-12 text-base"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
+                <Label htmlFor="password" className="text-sm">Password</Label>
                 <Input
                   id="password"
                   type="password"
@@ -170,12 +184,14 @@ export default function LoginPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  className="h-11"
+                  className="h-12 text-base"
                 />
               </div>
-              <Button type="submit" className="w-full h-11" disabled={loading}>
-                {loading ? "Signing in..." : "Sign in"}
-              </Button>
+              <motion.div whileTap={{ scale: 0.97 }}>
+                <Button type="submit" className="w-full h-12 rounded-xl text-base font-semibold" disabled={loading}>
+                  {loading ? "Signing in..." : "Sign in"}
+                </Button>
+              </motion.div>
             </form>
           ) : (
             <PhoneAuth />
