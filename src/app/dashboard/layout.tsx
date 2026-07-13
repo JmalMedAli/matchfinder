@@ -59,7 +59,7 @@ export default function DashboardLayout({
     <div className="flex min-h-screen">
       <NavSidebar userId={userId} onUnreadCountChange={handleUnreadChange} unreadVersion={unreadVersion} />
       <main className="flex-1 min-w-0">
-        <div className="container mx-auto p-4 pb-24 md:p-6 md:pb-6">{children}</div>
+        <div className="container mx-auto px-4 pt-4 pb-24 md:p-6 md:pb-6">{children}</div>
       </main>
       <BottomNav />
     </div>
