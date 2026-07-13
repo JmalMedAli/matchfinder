@@ -24,6 +24,7 @@ import { DmButton } from "@/components/dm-button";
 import { PlayerProfileModal } from "@/components/player-profile-modal";
 import { ShareMatch } from "@/components/share-match";
 import { MatchCountdown } from "@/components/match-countdown";
+import { PostMatchReviewPrompt } from "@/components/post-match-review-prompt";
 import { useMutation } from "@tanstack/react-query";
 import {
   MapPin, ExternalLink, Phone, MessageCircle, Globe,
@@ -303,6 +304,11 @@ export default function MatchDetailPage({
           {match.description && (
             <p className="text-sm text-white/60 mt-1 line-clamp-2">{match.description}</p>
           )}
+          {match.position_needed && (
+            <span className="inline-flex items-center text-xs font-medium text-white bg-white/15 backdrop-blur-sm rounded-full px-2.5 py-1 mt-2">
+              {match.position_needed} needed
+            </span>
+          )}
         </div>
       </motion.div>
 
@@ -513,6 +519,22 @@ export default function MatchDetailPage({
                 </div>
               </div>
             </Link>
+          </motion.div>
+        )}
+
+        {/* Post-Match Review Prompt */}
+        {match.status === "COMPLETED" && !isOrganizer && userId && !matchReviews?.some((r) => r.reviewer_id === userId) && (
+          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.35 }}>
+            <PostMatchReviewPrompt
+              matchTitle={match.title}
+              onSubmit={(rating, comment) => {
+                const firstUnreviewed = acceptedPlayers.find((r: any) => r.player_id !== userId && !matchReviews?.some((rev) => rev.reviewer_id === userId && rev.player_id === r.player_id));
+                if (firstUnreviewed) {
+                  submitReview.mutate({ matchId: id, playerId: firstUnreviewed.player_id, rating, comment }, { onSuccess: () => toast.success("Review submitted"), onError: (err) => toast.error(err.message) });
+                }
+              }}
+              isPending={submitReview.isPending}
+            />
           </motion.div>
         )}
 

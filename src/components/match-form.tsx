@@ -23,6 +23,8 @@ const STEPS = [
   { id: "players", label: "Players", icon: Users },
 ];
 
+const POSITIONS = ["", "Goalkeeper", "Defender", "Midfielder", "Forward"];
+
 export function MatchForm({ mode = "create" }: { mode?: "create" }) {
   const router = useRouter();
   const createMatch = useCreateMatch();
@@ -33,6 +35,7 @@ export function MatchForm({ mode = "create" }: { mode?: "create" }) {
   const [time, setTime] = useState("18:00");
   const [field, setField] = useState<FootballField | null>(null);
   const [maxPlayers, setMaxPlayers] = useState("14");
+  const [positionNeeded, setPositionNeeded] = useState("");
 
   const isLast = step === STEPS.length - 1;
   const progress = ((step + 1) / STEPS.length) * 100;
@@ -81,6 +84,7 @@ export function MatchForm({ mode = "create" }: { mode?: "create" }) {
         location: field.name,
         footballFieldId: field.id,
         maxPlayers: parseInt(maxPlayers, 10),
+        positionNeeded: positionNeeded || undefined,
       },
       {
         onSuccess: (match) => {
@@ -276,6 +280,28 @@ export function MatchForm({ mode = "create" }: { mode?: "create" }) {
                     className="h-12 text-base"
                   />
                 </div>
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-1.5 text-sm">
+                    <Users className="h-3.5 w-3.5 text-primary" />
+                    Position needed (optional)
+                  </Label>
+                  <div className="flex gap-2 flex-wrap">
+                    {POSITIONS.map((pos) => (
+                      <button
+                        key={pos || "any"}
+                        type="button"
+                        onClick={() => setPositionNeeded(pos)}
+                        className={`px-3 py-1.5 rounded-full text-sm border transition-colors ${
+                          positionNeeded === pos
+                            ? "bg-primary text-primary-foreground border-primary"
+                            : "bg-background text-muted-foreground border-border hover:border-primary/50"
+                        }`}
+                      >
+                        {pos || "Any"}
+                      </button>
+                    ))}
+                  </div>
+                </div>
 
                 {/* ── Review Summary ── */}
                 <div className="mt-6 p-4 bg-muted/50 rounded-2xl border space-y-3">
@@ -314,7 +340,7 @@ export function MatchForm({ mode = "create" }: { mode?: "create" }) {
                       <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
                         <Users className="h-4 w-4 text-primary" />
                       </div>
-                      <p className="text-sm font-medium">{maxPlayers} players max</p>
+                      <p className="text-sm font-medium">{maxPlayers} players max{positionNeeded ? ` — ${positionNeeded}` : ""}</p>
                     </div>
                   </div>
                 </div>

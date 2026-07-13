@@ -7,6 +7,7 @@ import { haversineDistance } from "@/lib/geo";
 import { NearbyMatchCard } from "@/components/nearby-match-card";
 import { DistanceFilter } from "@/components/distance-filter";
 import { CityFallback } from "@/components/city-fallback";
+import { PositionFilter } from "@/components/position-filter";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { MapPin, LocateOff, RefreshCw, Compass, Search } from "lucide-react";
@@ -28,6 +29,7 @@ export default function NearbyPage() {
   const { lat, lng, permission, retry } = useGeolocation();
   const [radiusKm, setRadiusKm] = useState<number | null>(null);
   const [cityFilter, setCityFilter] = useState<string | null>(null);
+  const [positionFilter, setPositionFilter] = useState<string | null>(null);
 
   const { data, isPending, error } = useQuery({
     queryKey: ["matches", "open-all"],
@@ -81,8 +83,14 @@ export default function NearbyPage() {
       );
     }
 
+    if (positionFilter) {
+      result = result.filter(
+        (item) => item.match.position_needed === positionFilter,
+      );
+    }
+
     return result;
-  }, [matchesWithDistance, radiusKm, cityFilter, lat, lng]);
+  }, [matchesWithDistance, radiusKm, cityFilter, positionFilter, lat, lng]);
 
   const hasLocation = permission === "granted" && lat != null && lng != null;
   const deniedLocation = permission === "denied";
@@ -136,6 +144,7 @@ export default function NearbyPage() {
         {(deniedLocation || permission === "prompt") && (
           <CityFallback value={cityFilter} onChange={setCityFilter} />
         )}
+        <PositionFilter selected={positionFilter} onSelect={setPositionFilter} />
       </div>
 
       {hasLocation && (

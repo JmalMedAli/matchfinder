@@ -17,6 +17,8 @@ import type { FootballField } from "@/types/football-field";
 import { ArrowLeft, Calendar, Clock, Users, FileText, Save } from "lucide-react";
 import { motion } from "framer-motion";
 
+const POSITIONS = ["", "Goalkeeper", "Defender", "Midfielder", "Forward"];
+
 export default function EditMatchPage({
   params,
 }: {
@@ -35,6 +37,7 @@ export default function EditMatchPage({
   const [time, setTime] = useState("18:00");
   const [field, setField] = useState<FootballField | null>(null);
   const [maxPlayers, setMaxPlayers] = useState("14");
+  const [positionNeeded, setPositionNeeded] = useState("");
 
   useEffect(() => {
     async function checkAuth() {
@@ -57,6 +60,7 @@ export default function EditMatchPage({
       setDate(d.toISOString().split("T")[0]);
       setTime(d.toTimeString().slice(0, 5));
       setMaxPlayers(String(match.max_players));
+      setPositionNeeded(match.position_needed ?? "");
     }
   }, [match]);
 
@@ -117,6 +121,7 @@ export default function EditMatchPage({
           location: field.name,
           footballFieldId: field.id,
           maxPlayers: parseInt(maxPlayers, 10),
+          positionNeeded: positionNeeded || undefined,
         },
       },
       {
@@ -235,6 +240,25 @@ export default function EditMatchPage({
               required
               className="h-12 text-base"
             />
+          </div>
+          <div className="space-y-2">
+            <Label className="text-sm">Position needed (optional)</Label>
+            <div className="flex gap-2 flex-wrap">
+              {POSITIONS.map((pos) => (
+                <button
+                  key={pos || "any"}
+                  type="button"
+                  onClick={() => setPositionNeeded(pos)}
+                  className={`px-3 py-1.5 rounded-full text-sm border transition-colors ${
+                    positionNeeded === pos
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "bg-background text-muted-foreground border-border hover:border-primary/50"
+                  }`}
+                >
+                  {pos || "Any"}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 

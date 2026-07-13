@@ -57,6 +57,11 @@ export function NearbyMatchCard({ match, distanceKm, index = 0 }: NearbyMatchCar
                 {match.football_fields?.city ?? match.location}
               </span>
             </div>
+            {match.position_needed && (
+              <span className="inline-flex items-center text-[11px] font-medium text-primary bg-primary/10 rounded-full px-2 py-0.5 mt-1 w-fit">
+                {match.position_needed} needed
+              </span>
+            )}
             {match.status === "OPEN" && (
               <div className="mt-1">
                 <MatchCountdown date={match.date} />

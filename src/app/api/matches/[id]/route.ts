@@ -82,6 +82,9 @@ export async function PATCH(
     if (!Number.isFinite(mp) || mp < 2 || mp > 100) return jsonError("Max players must be between 2 and 100");
     data.max_players = mp;
   }
+  if (body.positionNeeded !== undefined) {
+    data.position_needed = body.positionNeeded ? String(body.positionNeeded).trim() : null;
+  }
   if (body.status !== undefined) {
     const s = String(body.status);
     if (!["OPEN", "FULL", "CLOSED", "COMPLETED", "ARCHIVED"].includes(s)) return jsonError("Invalid status value");

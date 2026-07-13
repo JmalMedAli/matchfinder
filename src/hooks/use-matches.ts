@@ -43,6 +43,7 @@ export interface Match {
   football_field_id: string | null;
   max_players: number;
   status: "OPEN" | "FULL" | "CLOSED" | "COMPLETED" | "ARCHIVED";
+  position_needed: string | null;
   created_at: string;
   updated_at: string;
   organizer_id: string;
@@ -98,6 +99,7 @@ async function createMatch(data: {
   location: string;
   footballFieldId?: string;
   maxPlayers: number;
+  positionNeeded?: string;
 }): Promise<Match> {
   const res = await fetch("/api/matches", {
     method: "POST",
@@ -120,6 +122,7 @@ async function updateMatch(
     location: string;
     footballFieldId: string | null;
     maxPlayers: number;
+    positionNeeded: string;
     status: string;
   }>,
 ): Promise<Match> {
