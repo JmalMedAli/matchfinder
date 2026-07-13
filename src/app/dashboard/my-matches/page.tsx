@@ -33,6 +33,18 @@ export default function MyMatchesPage() {
   const pending = requests?.filter((r) => r.status === "PENDING") ?? [];
   const rejected = requests?.filter((r) => r.status === "REJECTED") ?? [];
 
+  function sortByDate(items: NonNullable<typeof requests>) {
+    return [...items].sort((a, b) => {
+      const dateA = a.matches ? new Date(a.matches.date).getTime() : 0;
+      const dateB = b.matches ? new Date(b.matches.date).getTime() : 0;
+      return dateA - dateB;
+    });
+  }
+
+  const sortedAccepted = sortByDate(accepted);
+  const sortedPending = sortByDate(pending);
+  const sortedRejected = sortByDate(rejected);
+
   function renderList(items: typeof requests, showWithdraw = false) {
     if (!items?.length) {
       return (
@@ -136,7 +148,7 @@ export default function MyMatchesPage() {
             <span className="text-[10px] bg-primary/10 px-1.5 py-0.5 rounded-full">{accepted.length}</span>
           )}
         </h2>
-        {renderList(accepted)}
+        {renderList(sortedAccepted)}
       </section>
 
       <section className="space-y-2.5">
@@ -147,7 +159,7 @@ export default function MyMatchesPage() {
             <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded-full">{pending.length}</span>
           )}
         </h2>
-        {renderList(pending, true)}
+        {renderList(sortedPending, true)}
       </section>
 
       <section className="space-y-2.5">
@@ -155,7 +167,7 @@ export default function MyMatchesPage() {
           <XCircle className="h-3.5 w-3.5" />
           Rejected
         </h2>
-        {renderList(rejected)}
+        {renderList(sortedRejected)}
       </section>
     </motion.div>
   );
