@@ -127,3 +127,65 @@ export async function DELETE(
 
   return NextResponse.json({ success: true });
 }
+
+export async function POST(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  const supabase = await createClient();
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError || !user) return jsonError("Unauthorized", 401);
+
+  const { id } = await params;
+  if (!UUID_RE.test(id)) return jsonError("Invalid match ID format");
+
+  let body: { action?: string };
+  try {
+    body = await req.json();
+  } catch {
+    return jsonError("Invalid JSON body");
+  }
+
+  if (body.action !== "remind") return jsonError("Invalid action");
+
+  const { data: existing } = await supabase
+    .from("matches")
+    .select("organizer_id, title, date")
+    .eq("id", id)
+    .single();
+
+  if (!existing) return jsonError("Match not found", 404);
+  if (existing.organizer_id !== user.id) return jsonError("Only the organizer can send reminders", 403);
+
+  const { data: acceptedPlayers } = await supabase
+    .from("join_requests")
+    .select("player_id")
+    .eq("match_id", id)
+    .eq("status", "ACCEPTED");
+
+  if (!acceptedPlayers || acceptedPlayers.length === 0) {
+    return jsonError("No accepted players to remind", 400);
+  }
+
+  const matchDate = new Date(existing.date);
+  const timeUntil = matchDate.getTime() - Date.now();
+  let timeLabel = "soon";
+  if (timeUntil > 3600000) {
+    const hours = Math.round(timeUntil / 3600000);
+    timeLabel = `in ${hours}h`;
+  } else if (timeUntil > 60000) {
+    const mins = Math.round(timeUntil / 60000);
+    timeLabel = `in ${mins}m`;
+  }
+
+  for (const player of acceptedPlayers) {
+    await supabase.rpc("create_notification", {
+      p_user_id: player.player_id,
+      p_title: "Match reminder",
+      p_message: `"${existing.title}" starts ${timeLabel}`,
+      p_match_id: id,
+    });
+  }
+
+  return NextResponse.json({ success: true, notified: acceptedPlayers.length });
+}

@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { MapPin, Clock, Users, Navigation, ChevronRight } from "lucide-react";
 import type { Match } from "@/hooks/use-matches";
 import { estimateTravelTime } from "@/lib/geo";
+import { MatchCountdown } from "@/components/match-countdown";
 import { motion } from "framer-motion";
 
 interface NearbyMatchCardProps {
@@ -56,6 +57,11 @@ export function NearbyMatchCard({ match, distanceKm, index = 0 }: NearbyMatchCar
                 {match.football_fields?.city ?? match.location}
               </span>
             </div>
+            {match.status === "OPEN" && (
+              <div className="mt-1">
+                <MatchCountdown date={match.date} />
+              </div>
+            )}
             {distanceKm > 0 && (
               <div className="flex items-center gap-2 mt-1">
                 <span className="inline-flex items-center gap-1 text-[11px] font-medium text-primary bg-primary/10 rounded-full px-2 py-0.5">

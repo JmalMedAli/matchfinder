@@ -32,11 +32,13 @@ export async function POST(req: NextRequest) {
     .single();
 
   if (matchError || !match) return jsonError("Match not found", 404);
-  if (match.status !== "OPEN") return jsonError("Match is not open");
+  if (match.status === "CLOSED" || match.status === "COMPLETED" || match.status === "ARCHIVED") {
+    return jsonError("Match is not accepting requests");
+  }
   if (match.organizer_id === user.id) return jsonError("Cannot join your own match");
 
   const acceptedCount = match.join_requests.filter((r: { status: string }) => r.status === "ACCEPTED").length;
-  if (acceptedCount >= match.max_players) return jsonError("Match is full");
+  const isFull = acceptedCount >= match.max_players;
 
   const existing = match.join_requests.find((r: { player_id: string; status: string }) => r.player_id === user.id);
   if (existing && existing.status === "PENDING") return jsonError("Already requested to join");
@@ -52,11 +54,13 @@ export async function POST(req: NextRequest) {
     if (updateErr) return jsonError(updateErr.message, 500);
     await supabase.rpc("create_notification", {
       p_user_id: match.organizer_id,
-      p_title: "New join request",
-      p_message: `Someone wants to join "${match.title}"`,
+      p_title: isFull ? "New waitlist request" : "New join request",
+      p_message: isFull
+        ? `Someone wants to waitlist for "${match.title}"`
+        : `Someone wants to join "${match.title}"`,
       p_match_id: matchId,
     });
-    return NextResponse.json(updated, { status: 201 });
+    return NextResponse.json({ ...updated, waitlisted: isFull }, { status: 201 });
   }
 
   const { data: joinRequest, error } = await supabase
@@ -69,10 +73,12 @@ export async function POST(req: NextRequest) {
 
   await supabase.rpc("create_notification", {
     p_user_id: match.organizer_id,
-    p_title: "New join request",
-    p_message: `Someone wants to join "${match.title}"`,
+    p_title: isFull ? "New waitlist request" : "New join request",
+    p_message: isFull
+      ? `Someone wants to waitlist for "${match.title}"`
+      : `Someone wants to join "${match.title}"`,
     p_match_id: matchId,
   });
 
-  return NextResponse.json(joinRequest, { status: 201 });
+  return NextResponse.json({ ...joinRequest, waitlisted: isFull }, { status: 201 });
 }

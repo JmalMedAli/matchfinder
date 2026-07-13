@@ -23,11 +23,13 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { DmButton } from "@/components/dm-button";
 import { PlayerProfileModal } from "@/components/player-profile-modal";
 import { ShareMatch } from "@/components/share-match";
+import { MatchCountdown } from "@/components/match-countdown";
+import { useMutation } from "@tanstack/react-query";
 import {
   MapPin, ExternalLink, Phone, MessageCircle, Globe,
   Calendar, Clock, Users, ArrowLeft, Pencil, Trash2,
   CheckCircle, XCircle, Hourglass, MessagesSquare, Eye, Star,
-  ChevronDown, ChevronUp, Archive, RotateCcw
+  ChevronDown, ChevronUp, Archive, RotateCcw, Bell
 } from "lucide-react";
 import { filterPublicProfile } from "@/types/profile";
 import type { MatchOrganizer } from "@/hooks/use-matches";
@@ -110,6 +112,23 @@ export default function MatchDetailPage({
   const { data: myRequests } = useJoinRequests();
   const { mutate: updateJoinRequest, isPending: isUpdatingJoinRequest } = useUpdateJoinRequest();
   const removeAcceptedPlayer = useRemoveAcceptedPlayer();
+  const remindMutation = useMutation({
+    mutationFn: async (matchId: string) => {
+      const res = await fetch(`/api/matches/${matchId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "remind" }),
+      });
+      if (!res.ok) throw new Error((await res.json()).error || "Failed to send reminders");
+      return res.json();
+    },
+    onSuccess: (data) => {
+      toast.success(`Reminders sent to ${data.notified} player${data.notified === 1 ? "" : "s"}`);
+    },
+    onError: (err: Error) => {
+      toast.error(err.message);
+    },
+  });
 
   useRealtimeJoinRequests({ matchId: id });
   const { data: field } = useFootballField(match?.football_field_id);
@@ -207,6 +226,10 @@ export default function MatchDetailPage({
       { id, data: { status: "OPEN" } },
       { onSuccess: () => toast.success("Match restored"), onError: (err) => toast.error(err.message) },
     );
+  }
+
+  function handleRemind() {
+    remindMutation.mutate(id);
   }
 
   function handleStatusChange(status: string) {
@@ -313,6 +336,12 @@ export default function MatchDetailPage({
             <p className="text-sm font-semibold">{acceptedCount}/{match.max_players}</p>
           </div>
         </div>
+        {match.status !== "COMPLETED" && match.status !== "ARCHIVED" && (
+          <>
+            <div className="h-8 w-px bg-border" />
+            <MatchCountdown date={match.date} />
+          </>
+        )}
       </motion.div>
 
       {/* ── Content ── */}
@@ -543,13 +572,13 @@ export default function MatchDetailPage({
       {/* ── Sticky Action Bar ── */}
       <div className="fixed bottom-[72px] left-0 right-0 z-40 md:bottom-0">
         <div className="bg-background/80 backdrop-blur-xl border-t border-border/50 px-4 py-3">
-          {!isOrganizer && match.status === "OPEN" && (
+          {!isOrganizer && (match.status === "OPEN" || match.status === "FULL") && (
             <>
               {myRequest?.status === "PENDING" ? (
                 <div className="flex items-center gap-3">
                   <div className="flex-1 flex items-center gap-2 text-sm text-muted-foreground">
                     <Hourglass className="h-4 w-4" />
-                    Request pending
+                    {match.status === "FULL" ? "Waitlisted — request pending" : "Request pending"}
                   </div>
                   <Button variant="outline" size="sm" onClick={() => handleWithdraw(myRequest.id)} disabled={withdrawRequest.isPending}>Withdraw</Button>
                 </div>
@@ -560,13 +589,13 @@ export default function MatchDetailPage({
                 </div>
               ) : myRequest?.status === "REJECTED" ? (
                 <div className="flex items-center gap-3">
-                  <span className="text-sm text-muted-foreground">Request rejected</span>
+                  <span className="text-sm text-muted-foreground">{match.status === "FULL" ? "Waitlist rejected" : "Request rejected"}</span>
                   <Button size="sm" onClick={handleJoin} disabled={joinRequest.isPending}>Request again</Button>
                 </div>
               ) : (
                 <motion.div whileTap={{ scale: 0.97 }}>
                   <Button onClick={handleJoin} disabled={joinRequest.isPending} className="w-full h-12 text-base font-semibold rounded-xl">
-                    {joinRequest.isPending ? "Sending..." : "Request to join"}
+                    {joinRequest.isPending ? "Sending..." : match.status === "FULL" ? "Join waitlist" : "Request to join"}
                   </Button>
                 </motion.div>
               )}
@@ -574,6 +603,12 @@ export default function MatchDetailPage({
           )}
           {isOrganizer && (
             <div className="flex gap-2">
+              {match.status !== "COMPLETED" && match.status !== "ARCHIVED" && (
+                <Button size="sm" variant="outline" className="flex-1 gap-1.5" onClick={handleRemind} disabled={remindMutation.isPending}>
+                  <Bell className="h-3.5 w-3.5" />
+                  {remindMutation.isPending ? "Sending..." : "Remind"}
+                </Button>
+              )}
               {match.status === "OPEN" && (
                 <>
                   <Button size="sm" variant="outline" className="flex-1" onClick={() => handleStatusChange("CLOSED")}>Close</Button>

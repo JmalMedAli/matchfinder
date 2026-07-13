@@ -7,10 +7,13 @@ import { createClient } from "@/lib/supabase/client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
+import { useTheme } from "next-themes";
+import { useState, useEffect } from "react";
 import {
   ChevronRight, List, Shield, Bell, Star, Settings,
-  HelpCircle, LogOut, Pencil, MapPin, Calendar, Archive
+  HelpCircle, LogOut, Pencil, MapPin, Calendar, Archive, Moon, Sun, Users
 } from "lucide-react";
+import { PlayerSearch } from "@/components/player-search";
 
 const menuSections = [
   {
@@ -40,6 +43,9 @@ const menuSections = [
 export default function ProfilePage() {
   const router = useRouter();
   const { data: profile, isPending } = useProfile();
+  const { theme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
 
   async function handleSignOut() {
     try {
@@ -139,11 +145,55 @@ export default function ProfilePage() {
           </motion.div>
         ))}
 
-        {/* ── Sign Out ── */}
+        {/* ── Appearance ── */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, delay: 0.2 }}
+        >
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-1 mb-2">
+            Appearance
+          </p>
+          <div className="bg-card border rounded-2xl overflow-hidden">
+            <div className="flex items-center gap-3.5 px-4 py-3.5">
+              <div className="h-9 w-9 rounded-xl bg-muted flex items-center justify-center shrink-0">
+                <Moon className="h-4.5 w-4.5 text-muted-foreground" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium">Dark Mode</p>
+                <p className="text-xs text-muted-foreground">Switch theme</p>
+              </div>
+              {mounted && (
+                <button
+                  onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+                  className={`relative inline-flex h-7 w-12 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary ${theme === "dark" ? "bg-primary" : "bg-muted"}`}
+                >
+                  <span className={`pointer-events-none inline-block h-6 w-6 rounded-full bg-background shadow-lg ring-0 transition-transform duration-200 ease-in-out flex items-center justify-center ${theme === "dark" ? "translate-x-5" : "translate-x-0"}`}>
+                    {theme === "dark" ? <Moon className="h-3 w-3 text-primary" /> : <Sun className="h-3 w-3 text-muted-foreground" />}
+                  </span>
+                </button>
+              )}
+            </div>
+          </div>
+        </motion.div>
+
+        {/* ── Player Search ── */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3, delay: 0.25 }}
+        >
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-1 mb-2">
+            Find Players
+          </p>
+          <PlayerSearch />
+        </motion.div>
+
+        {/* ── Sign Out ── */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, delay: 0.3 }}
         >
           <Button
             variant="ghost"
