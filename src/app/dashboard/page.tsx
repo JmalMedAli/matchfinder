@@ -12,10 +12,11 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { PlayerLeaderboard } from "@/components/player-leaderboard";
 import { ActivityFeed } from "@/components/activity-feed";
 import { PopularFields } from "@/components/popular-fields";
+import { FootballCalendar } from "@/components/football-calendar";
 import {
   Calendar, MapPin, Plus, Users, ChevronRight,
   Shield, Clock, CheckCircle, Hourglass, XCircle, Zap,
-  ArrowRight, Search, List, Trophy, Activity, Building2
+  ArrowRight, Search, List, Trophy, Activity, Building2, CalendarDays
 } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -130,6 +131,22 @@ export default function DashboardPage() {
               </div>
             </Link>
           </motion.div>
+
+          {/* ── Football Calendar ── */}
+          <motion.section
+            className="mb-5"
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3, delay: 0.08 }}
+          >
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                <CalendarDays className="h-3.5 w-3.5 text-primary" />
+                Football Calendar
+              </h2>
+            </div>
+            <FootballCalendar userId={userId} />
+          </motion.section>
 
           {/* ── Popular Fields ── */}
           <motion.section
