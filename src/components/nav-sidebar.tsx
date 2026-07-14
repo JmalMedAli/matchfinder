@@ -5,7 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
-import { Bell, LogOut, MapPin, User, MessageCircle, Shield, LayoutDashboard, PlusCircle } from "lucide-react";
+import { Bell, LogOut, MapPin, User, MessageCircle, Shield, LayoutDashboard, PlusCircle, Search } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ConnectionStatus } from "@/components/connection-status";
 import { useEffect, useState, useCallback } from "react";
@@ -13,6 +13,7 @@ import { motion } from "framer-motion";
 
 const desktopNavItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/dashboard/fields", label: "Football Fields", icon: Search },
   { href: "/dashboard/nearby", label: "Nearby Matches", icon: MapPin },
   { href: "/dashboard/matches/new", label: "Create Match", icon: PlusCircle },
   { href: "/dashboard/conversations", label: "Conversations", icon: MessageCircle },

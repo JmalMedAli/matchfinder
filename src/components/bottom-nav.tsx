@@ -3,13 +3,13 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { Home, MapPin, Plus, User, MessageCircle } from "lucide-react";
+import { Home, MapPin, Plus, User, MessageCircle, Search } from "lucide-react";
 import { motion } from "framer-motion";
 import { useUnreadCounts } from "@/hooks/use-unread-count";
 
 const tabs = [
   { href: "/dashboard", label: "Home", icon: Home },
-  { href: "/dashboard/nearby", label: "Nearby", icon: MapPin },
+  { href: "/dashboard/fields", label: "Fields", icon: Search },
   { href: "/dashboard/matches/new", label: "Create", icon: Plus, isCreate: true },
   { href: "/dashboard/conversations", label: "Chats", icon: MessageCircle },
   { href: "/dashboard/profile", label: "Profile", icon: User },

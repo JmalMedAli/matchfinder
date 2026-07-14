@@ -29,7 +29,7 @@ export default function EditMatchPage({
   const [userId, setUserId] = useState<string | null>(null);
   const { data: match, isPending } = useMatch(id);
   const updateMatch = useUpdateMatch();
-  const { data: existingField } = useFootballField(match?.football_field_id);
+  const { data: existingField } = useFootballField(match?.football_field_id ?? null);
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");

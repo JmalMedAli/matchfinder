@@ -134,7 +134,7 @@ export default function MatchDetailPage({
   });
 
   useRealtimeJoinRequests({ matchId: id });
-  const { data: field } = useFootballField(match?.football_field_id);
+  const { data: field } = useFootballField(match?.football_field_id ?? null);
   const { data: matchReviews } = useMatchReviews(id);
   const submitReview = useSubmitReview();
   const { data: photos, isPending: photosPending } = useMatchPhotos(id);

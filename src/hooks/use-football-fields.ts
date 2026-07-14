@@ -1,51 +1,79 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { createClient } from "@/lib/supabase/client";
 import type { FootballField } from "@/types/football-field";
 
-async function fetchFootballFields(search?: string): Promise<FootballField[]> {
-  const supabase = createClient();
-  let query = supabase
-    .from("football_fields")
-    .select("*")
-    .order("city")
-    .order("name");
-
-  if (search?.trim()) {
-    const q = search.trim();
-    query = query.or(`name.ilike.%${q}%,city.ilike.%${q}%,address.ilike.%${q}%`);
-  }
-
-  const { data, error } = await query;
-  if (error) throw error;
-  return data ?? [];
+export interface FieldMatchSummary {
+  id: string;
+  title: string;
+  date: string;
+  max_players: number;
+  price_per_person: number | null;
+  status: string;
+  position_needed: string | null;
+  organizer: { name: string | null; image: string | null } | null;
+  accepted_count: number;
 }
 
-async function fetchFootballField(id: string): Promise<FootballField | null> {
-  const supabase = createClient();
-  const { data, error } = await supabase
-    .from("football_fields")
-    .select("*")
-    .eq("id", id)
-    .single();
-  if (error) return null;
-  return data;
+export interface FieldWithMatches extends FootballField {
+  match_count: number;
+  upcoming_matches: FieldMatchSummary[];
+}
+
+export interface FieldListItem extends FootballField {
+  match_count: number;
+}
+
+async function fetchAllFields(): Promise<FieldListItem[]> {
+  const res = await fetch("/api/fields");
+  if (!res.ok) throw new Error("Failed to fetch fields");
+  return res.json();
+}
+
+async function fetchField(id: string): Promise<FieldWithMatches> {
+  const res = await fetch(`/api/fields/${id}`);
+  if (!res.ok) throw new Error("Field not found");
+  return res.json();
+}
+
+export function useAllFootballFields() {
+  return useQuery({
+    queryKey: ["fields-all"],
+    queryFn: fetchAllFields,
+    staleTime: 30_000,
+  });
+}
+
+export function useFootballFieldDetail(id: string | null) {
+  return useQuery({
+    queryKey: ["field-detail", id],
+    queryFn: () => fetchField(id!),
+    enabled: !!id,
+    staleTime: 30_000,
+  });
 }
 
 export function useFootballFields(search?: string) {
   return useQuery({
-    queryKey: ["football-fields", search ?? ""],
-    queryFn: () => fetchFootballFields(search),
-    staleTime: 5 * 60 * 1000,
+    queryKey: ["fields-list", search],
+    queryFn: async () => {
+      const res = await fetch(`/api/fields${search ? `?search=${encodeURIComponent(search)}` : ""}`);
+      if (!res.ok) throw new Error("Failed to fetch fields");
+      return res.json() as Promise<FootballField[]>;
+    },
+    staleTime: 30_000,
   });
 }
 
-export function useFootballField(id: string | null | undefined) {
+export function useFootballField(id: string | null) {
   return useQuery({
-    queryKey: ["football-field", id],
-    queryFn: () => fetchFootballField(id!),
+    queryKey: ["field", id],
+    queryFn: async () => {
+      const res = await fetch(`/api/fields/${id}`);
+      if (!res.ok) throw new Error("Field not found");
+      return res.json() as Promise<FootballField>;
+    },
     enabled: !!id,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 30_000,
   });
 }

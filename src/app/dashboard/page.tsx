@@ -11,10 +11,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { PlayerLeaderboard } from "@/components/player-leaderboard";
 import { ActivityFeed } from "@/components/activity-feed";
+import { PopularFields } from "@/components/popular-fields";
 import {
   Calendar, MapPin, Plus, Users, ChevronRight,
   Shield, Clock, CheckCircle, Hourglass, XCircle, Zap,
-  ArrowRight, Search, List, Trophy, Activity
+  ArrowRight, Search, List, Trophy, Activity, Building2
 } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -122,7 +123,32 @@ export default function DashboardPage() {
                 My matches
               </div>
             </Link>
+            <Link href="/dashboard/fields" className="shrink-0">
+              <div className="flex items-center gap-1.5 bg-muted px-4 py-2.5 rounded-full text-sm font-medium active:scale-95 transition-transform">
+                <Building2 className="h-4 w-4" />
+                Fields
+              </div>
+            </Link>
           </motion.div>
+
+          {/* ── Popular Fields ── */}
+          <motion.section
+            className="mb-5"
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3, delay: 0.1 }}
+          >
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                <Building2 className="h-3.5 w-3.5 text-primary" />
+                Popular Fields
+              </h2>
+              <Link href="/dashboard/fields" className="text-xs text-primary font-medium flex items-center gap-0.5">
+                View all <ChevronRight className="h-3 w-3" />
+              </Link>
+            </div>
+            <PopularFields />
+          </motion.section>
 
           {/* ── Pending Alerts Strip ── */}
           {totalPending > 0 && (
@@ -316,6 +342,12 @@ export default function DashboardPage() {
                   <div className="flex items-center gap-1.5 bg-primary text-primary-foreground px-5 py-2.5 rounded-full text-sm font-semibold active:scale-95 transition-transform">
                     <Plus className="h-4 w-4" />
                     Create match
+                  </div>
+                </Link>
+                <Link href="/dashboard/fields">
+                  <div className="flex items-center gap-1.5 bg-muted px-5 py-2.5 rounded-full text-sm font-medium active:scale-95 transition-transform">
+                    <Building2 className="h-4 w-4" />
+                    Browse fields
                   </div>
                 </Link>
                 <Link href="/dashboard/nearby">

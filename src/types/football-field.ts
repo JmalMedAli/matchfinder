@@ -6,5 +6,26 @@ export interface FootballField {
   latitude: number | null;
   longitude: number | null;
   image_url: string | null;
+  description: string | null;
+  surface_type: string;
+  is_indoor: boolean;
+  dimensions: string | null;
+  has_parking: boolean;
+  has_changing_rooms: boolean;
+  has_showers: boolean;
+  has_lockers: boolean;
+  has_lighting: boolean;
+  has_cafeteria: boolean;
+  has_toilets: boolean;
+  has_equipment_rental: boolean;
+  has_wifi: boolean;
+  has_accessibility: boolean;
+  phone: string | null;
+  opening_hours: Record<string, { open: string; close: string } | null> | null;
+  price_range: string | null;
+  photos: string[];
+  rating: number;
+  review_count: number;
+  is_active: boolean;
   created_at: string;
 }
