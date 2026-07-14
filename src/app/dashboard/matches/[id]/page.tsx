@@ -25,6 +25,8 @@ import { PlayerProfileModal } from "@/components/player-profile-modal";
 import { ShareMatch } from "@/components/share-match";
 import { MatchCountdown } from "@/components/match-countdown";
 import { PostMatchReviewPrompt } from "@/components/post-match-review-prompt";
+import { PostMatchReview } from "@/components/post-match-review";
+import { MatchAwards } from "@/components/match-awards";
 import { MatchCheckin } from "@/components/match-checkin";
 import { FavoriteButton } from "@/components/favorite-button";
 import { useMutation } from "@tanstack/react-query";
@@ -32,7 +34,7 @@ import {
   MapPin, ExternalLink, Phone, MessageCircle, Globe,
   Calendar, Clock, Users, ArrowLeft, Pencil, Trash2,
   CheckCircle, XCircle, Hourglass, MessagesSquare, Eye, Star,
-  ChevronDown, ChevronUp, Archive, RotateCcw, Bell, DollarSign
+  ChevronDown, ChevronUp, Archive, RotateCcw, Bell, DollarSign, Trophy
 } from "lucide-react";
 import { filterPublicProfile } from "@/types/profile";
 import type { MatchOrganizer } from "@/hooks/use-matches";
@@ -143,6 +145,7 @@ export default function MatchDetailPage({
   const [photosState, setPhotosState] = useState<MatchPhoto[]>([]);
   const [groupConvId, setGroupConvId] = useState<string | null>(null);
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
+  const [showPostReview, setShowPostReview] = useState(false);
 
   const loadUser = useCallback(async () => {
     try {
@@ -542,17 +545,12 @@ export default function MatchDetailPage({
         )}
 
         {/* Post-Match Review Prompt */}
-        {match.status === "COMPLETED" && !isOrganizer && userId && !matchReviews?.some((r) => r.reviewer_id === userId) && (
+        {match.status === "COMPLETED" && userId && !matchReviews?.some((r) => r.reviewer_id === userId) && (
           <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.35 }}>
             <PostMatchReviewPrompt
               matchTitle={match.title}
-              onSubmit={(rating, comment) => {
-                const firstUnreviewed = acceptedPlayers.find((r: any) => r.player_id !== userId && !matchReviews?.some((rev) => rev.reviewer_id === userId && rev.player_id === r.player_id));
-                if (firstUnreviewed) {
-                  submitReview.mutate({ matchId: id, playerId: firstUnreviewed.player_id, rating, comment }, { onSuccess: () => toast.success("Review submitted"), onError: (err) => toast.error(err.message) });
-                }
-              }}
-              isPending={submitReview.isPending}
+              onSubmit={() => setShowPostReview(true)}
+              isPending={false}
             />
           </motion.div>
         )}
@@ -598,6 +596,25 @@ export default function MatchDetailPage({
                   </div>
                 ))}
               </div>
+            </CollapsibleSection>
+          </motion.div>
+        )}
+
+        {/* Match Awards — Completed matches */}
+        {match.status === "COMPLETED" && userId && (
+          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.42 }}>
+            <CollapsibleSection title="Match Awards" icon={<Trophy className="h-4 w-4 text-amber-500" />} defaultOpen={false}>
+              <MatchAwards
+                matchId={id}
+                participants={acceptedPlayers.map((r: any) => ({
+                  id: r.player_id,
+                  name: r.profiles?.name ?? null,
+                  image: r.profiles?.image ?? null,
+                }))}
+                currentUserId={userId}
+                motmPlayerId={match.motm_player_id}
+                fairPlayPlayerId={match.fair_play_player_id}
+              />
             </CollapsibleSection>
           </motion.div>
         )}
@@ -703,6 +720,25 @@ export default function MatchDetailPage({
           viewerId={userId}
           onRequestAction={(action) => { const req = match.join_requests.find((r: any) => r.player_id === selectedPlayerId); if (req) { handleRequestAction(req.id, action); setSelectedPlayerId(null); } }}
           actionPending={isUpdatingJoinRequest}
+        />
+      )}
+
+      {/* Post-Match Review Wizard */}
+      {showPostReview && userId && (
+        <PostMatchReview
+          matchId={id}
+          matchTitle={match.title}
+          matchDate={match.date}
+          fieldName={field?.name ?? null}
+          organizerName={match.profiles?.name ?? "Organizer"}
+          participants={acceptedPlayers.map((r: any) => ({
+            id: r.player_id,
+            name: r.profiles?.name ?? null,
+            image: r.profiles?.image ?? null,
+          }))}
+          currentUserId={userId}
+          onComplete={() => setShowPostReview(false)}
+          onSkip={() => setShowPostReview(false)}
         />
       )}
     </div>

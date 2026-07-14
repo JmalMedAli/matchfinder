@@ -45,6 +45,8 @@ export interface Match {
   status: "OPEN" | "FULL" | "CLOSED" | "COMPLETED" | "ARCHIVED";
   position_needed: string | null;
   price_per_person: number | null;
+  motm_player_id: string | null;
+  fair_play_player_id: string | null;
   created_at: string;
   updated_at: string;
   organizer_id: string;

@@ -105,6 +105,26 @@ export async function PATCH(
 
   if (error) return jsonError(error.message, 500);
 
+  // If match completed, increment matches_played for all accepted players
+  if (data.status === "COMPLETED") {
+    const { data: accepted } = await supabase
+      .from("join_requests")
+      .select("player_id")
+      .eq("match_id", id)
+      .eq("status", "ACCEPTED");
+
+    if (accepted && accepted.length > 0) {
+      const playerIds = accepted.map((r) => r.player_id);
+      // Increment matches_played for each player
+      for (const pid of playerIds) {
+        const { data: p } = await supabase.from("profiles").select("matches_played").eq("id", pid).single();
+        if (p) {
+          await supabase.from("profiles").update({ matches_played: (p.matches_played ?? 0) + 1 }).eq("id", pid);
+        }
+      }
+    }
+  }
+
   return NextResponse.json(updated);
 }
 

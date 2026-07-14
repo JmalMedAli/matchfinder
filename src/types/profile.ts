@@ -14,6 +14,11 @@ export interface Profile {
   show_whatsapp: boolean;
   show_facebook: boolean;
   show_instagram: boolean;
+  matches_played: number;
+  goals_scored: number;
+  motm_awards: number;
+  avg_rating: number;
+  completion_rate: number;
   created_at: string;
 }
 
@@ -62,6 +67,11 @@ export const PROFILE_FIELDS = [
   "show_whatsapp",
   "show_facebook",
   "show_instagram",
+  "matches_played",
+  "goals_scored",
+  "motm_awards",
+  "avg_rating",
+  "completion_rate",
   "created_at",
 ] as const;
 

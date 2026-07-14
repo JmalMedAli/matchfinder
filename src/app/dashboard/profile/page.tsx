@@ -11,9 +11,11 @@ import { useTheme } from "next-themes";
 import { useState, useEffect } from "react";
 import {
   ChevronRight, List, Shield, Bell, Star, Settings,
-  HelpCircle, LogOut, Pencil, MapPin, Calendar, Archive, Moon, Sun, Users
+  HelpCircle, LogOut, Pencil, MapPin, Calendar, Archive, Moon, Sun, Users,
+  Trophy, Target, TrendingUp
 } from "lucide-react";
 import { PlayerSearch } from "@/components/player-search";
+import { PlayerAchievements } from "@/components/player-achievements";
 
 const menuSections = [
   {
@@ -110,6 +112,54 @@ export default function ProfilePage() {
           </Link>
         </div>
       </motion.div>
+
+      {/* ── Player Stats ── */}
+      {profile?.id && (profile.matches_played ?? 0) > 0 && (
+        <motion.div
+          className="mb-5"
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, delay: 0.08 }}
+        >
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-1 mb-2">
+            Statistics
+          </p>
+          <div className="grid grid-cols-4 gap-2">
+            <div className="bg-card border rounded-xl p-3 text-center">
+              <TrendingUp className="h-4 w-4 text-primary mx-auto mb-1" />
+              <p className="text-lg font-bold font-[family-name:var(--font-barlow-condensed)]">{profile.matches_played ?? 0}</p>
+              <p className="text-[10px] text-muted-foreground">Matches</p>
+            </div>
+            <div className="bg-card border rounded-xl p-3 text-center">
+              <Target className="h-4 w-4 text-green-500 mx-auto mb-1" />
+              <p className="text-lg font-bold font-[family-name:var(--font-barlow-condensed)]">{profile.goals_scored ?? 0}</p>
+              <p className="text-[10px] text-muted-foreground">Goals</p>
+            </div>
+            <div className="bg-card border rounded-xl p-3 text-center">
+              <Trophy className="h-4 w-4 text-amber-500 mx-auto mb-1" />
+              <p className="text-lg font-bold font-[family-name:var(--font-barlow-condensed)]">{profile.motm_awards ?? 0}</p>
+              <p className="text-[10px] text-muted-foreground">MOTM</p>
+            </div>
+            <div className="bg-card border rounded-xl p-3 text-center">
+              <Star className="h-4 w-4 text-amber-500 mx-auto mb-1" />
+              <p className="text-lg font-bold font-[family-name:var(--font-barlow-condensed)]">{(profile.avg_rating ?? 0).toFixed(1)}</p>
+              <p className="text-[10px] text-muted-foreground">Rating</p>
+            </div>
+          </div>
+        </motion.div>
+      )}
+
+      {/* ── Achievements ── */}
+      {profile?.id && (
+        <motion.div
+          className="mb-5"
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, delay: 0.12 }}
+        >
+          <PlayerAchievements playerId={profile.id} />
+        </motion.div>
+      )}
 
       {/* ── Menu Sections ── */}
       <div className="space-y-5">
