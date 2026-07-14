@@ -14,7 +14,7 @@ import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FootballFieldSelector } from "@/components/football-field-selector";
 import type { FootballField } from "@/types/football-field";
-import { ArrowLeft, Calendar, Clock, Users, FileText, Save } from "lucide-react";
+import { ArrowLeft, Calendar, Clock, Users, FileText, Save, DollarSign } from "lucide-react";
 import { motion } from "framer-motion";
 
 const POSITIONS = ["", "Goalkeeper", "Defender", "Midfielder", "Forward"];
@@ -38,6 +38,7 @@ export default function EditMatchPage({
   const [field, setField] = useState<FootballField | null>(null);
   const [maxPlayers, setMaxPlayers] = useState("14");
   const [positionNeeded, setPositionNeeded] = useState("");
+  const [pricePerPerson, setPricePerPerson] = useState("");
 
   useEffect(() => {
     async function checkAuth() {
@@ -61,6 +62,7 @@ export default function EditMatchPage({
       setTime(d.toTimeString().slice(0, 5));
       setMaxPlayers(String(match.max_players));
       setPositionNeeded(match.position_needed ?? "");
+      setPricePerPerson(match.price_per_person ? String(match.price_per_person) : "");
     }
   }, [match]);
 
@@ -122,6 +124,7 @@ export default function EditMatchPage({
           footballFieldId: field.id,
           maxPlayers: parseInt(maxPlayers, 10),
           positionNeeded: positionNeeded || undefined,
+          pricePerPerson: pricePerPerson ? parseFloat(pricePerPerson) : undefined,
         },
       },
       {
@@ -258,6 +261,24 @@ export default function EditMatchPage({
                   {pos || "Any"}
                 </button>
               ))}
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label className="flex items-center gap-1.5 text-sm">
+              <DollarSign className="h-3.5 w-3.5 text-primary" />
+              Price per person (optional)
+            </Label>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">TND</span>
+              <Input
+                type="number"
+                min={0}
+                step={0.5}
+                placeholder="0 for free"
+                value={pricePerPerson}
+                onChange={(e) => setPricePerPerson(e.target.value)}
+                className="h-12 text-base pl-10"
+              />
             </div>
           </div>
         </div>

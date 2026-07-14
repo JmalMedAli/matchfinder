@@ -12,7 +12,7 @@ import { FootballFieldSelector } from "@/components/football-field-selector";
 import type { FootballField } from "@/types/football-field";
 import {
   Calendar, Clock, Users, FileText, ChevronRight, ChevronLeft,
-  MapPin, Check, Zap
+  MapPin, Check, Zap, DollarSign
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -36,6 +36,7 @@ export function MatchForm({ mode = "create" }: { mode?: "create" }) {
   const [field, setField] = useState<FootballField | null>(null);
   const [maxPlayers, setMaxPlayers] = useState("14");
   const [positionNeeded, setPositionNeeded] = useState("");
+  const [pricePerPerson, setPricePerPerson] = useState("");
 
   const isLast = step === STEPS.length - 1;
   const progress = ((step + 1) / STEPS.length) * 100;
@@ -85,6 +86,7 @@ export function MatchForm({ mode = "create" }: { mode?: "create" }) {
         footballFieldId: field.id,
         maxPlayers: parseInt(maxPlayers, 10),
         positionNeeded: positionNeeded || undefined,
+        pricePerPerson: pricePerPerson ? parseFloat(pricePerPerson) : undefined,
       },
       {
         onSuccess: (match) => {
@@ -302,6 +304,24 @@ export function MatchForm({ mode = "create" }: { mode?: "create" }) {
                     ))}
                   </div>
                 </div>
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-1.5 text-sm">
+                    <DollarSign className="h-3.5 w-3.5 text-primary" />
+                    Price per person (optional)
+                  </Label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">TND</span>
+                    <Input
+                      type="number"
+                      min={0}
+                      step={0.5}
+                      placeholder="0 for free"
+                      value={pricePerPerson}
+                      onChange={(e) => setPricePerPerson(e.target.value)}
+                      className="h-12 text-base pl-10"
+                    />
+                  </div>
+                </div>
 
                 {/* ── Review Summary ── */}
                 <div className="mt-6 p-4 bg-muted/50 rounded-2xl border space-y-3">
@@ -342,6 +362,14 @@ export function MatchForm({ mode = "create" }: { mode?: "create" }) {
                       </div>
                       <p className="text-sm font-medium">{maxPlayers} players max{positionNeeded ? ` — ${positionNeeded}` : ""}</p>
                     </div>
+                    {pricePerPerson && parseFloat(pricePerPerson) > 0 && (
+                      <div className="flex items-center gap-3">
+                        <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                          <DollarSign className="h-4 w-4 text-primary" />
+                        </div>
+                        <p className="text-sm font-medium">{pricePerPerson} TND per person</p>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>

@@ -32,7 +32,7 @@ import {
   MapPin, ExternalLink, Phone, MessageCircle, Globe,
   Calendar, Clock, Users, ArrowLeft, Pencil, Trash2,
   CheckCircle, XCircle, Hourglass, MessagesSquare, Eye, Star,
-  ChevronDown, ChevronUp, Archive, RotateCcw, Bell
+  ChevronDown, ChevronUp, Archive, RotateCcw, Bell, DollarSign
 } from "lucide-react";
 import { filterPublicProfile } from "@/types/profile";
 import type { MatchOrganizer } from "@/hooks/use-matches";
@@ -310,6 +310,12 @@ export default function MatchDetailPage({
           {match.position_needed && (
             <span className="inline-flex items-center text-xs font-medium text-white bg-white/15 backdrop-blur-sm rounded-full px-2.5 py-1 mt-2">
               {match.position_needed} needed
+            </span>
+          )}
+          {match.price_per_person != null && match.price_per_person > 0 && (
+            <span className="inline-flex items-center gap-1 text-xs font-medium text-white bg-amber-500/20 backdrop-blur-sm rounded-full px-2.5 py-1 mt-2">
+              <DollarSign className="h-3 w-3" />
+              {match.price_per_person} TND / person
             </span>
           )}
         </div>

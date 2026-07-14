@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
-import { MapPin, Clock, Users, Navigation, ChevronRight } from "lucide-react";
+import { MapPin, Clock, Users, Navigation, ChevronRight, DollarSign } from "lucide-react";
 import type { Match } from "@/hooks/use-matches";
 import { estimateTravelTime } from "@/lib/geo";
 import { MatchCountdown } from "@/components/match-countdown";
@@ -60,6 +60,12 @@ export function NearbyMatchCard({ match, distanceKm, index = 0 }: NearbyMatchCar
             {match.position_needed && (
               <span className="inline-flex items-center text-[11px] font-medium text-primary bg-primary/10 rounded-full px-2 py-0.5 mt-1 w-fit">
                 {match.position_needed} needed
+              </span>
+            )}
+            {match.price_per_person != null && match.price_per_person > 0 && (
+              <span className="inline-flex items-center gap-1 text-[11px] font-medium text-amber-600 bg-amber-50 dark:bg-amber-950 dark:text-amber-400 rounded-full px-2 py-0.5 mt-1 w-fit">
+                <DollarSign className="h-2.5 w-2.5" />
+                {match.price_per_person} TND
               </span>
             )}
             {match.status === "OPEN" && (

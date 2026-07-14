@@ -71,6 +71,7 @@ export async function POST(req: NextRequest) {
   const footballFieldId = body.footballFieldId as string | undefined;
   const maxPlayers = body.maxPlayers as number | undefined;
   const positionNeeded = body.positionNeeded as string | undefined;
+  const pricePerPerson = body.pricePerPerson as number | undefined;
 
   if (!title?.trim()) return jsonError("Title is required");
   if (!date || isNaN(Date.parse(date))) return jsonError("Valid date is required");
@@ -94,6 +95,7 @@ export async function POST(req: NextRequest) {
       football_field_id: footballFieldId && UUID_RE.test(footballFieldId) ? footballFieldId : null,
       max_players: maxPlayers,
       position_needed: positionNeeded?.trim() || null,
+      price_per_person: pricePerPerson && pricePerPerson > 0 ? pricePerPerson : null,
       organizer_id: user.id,
     })
     .select(`*, profiles!organizer_id(${PROFILE_SELECT})`)

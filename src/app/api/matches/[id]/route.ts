@@ -85,6 +85,9 @@ export async function PATCH(
   if (body.positionNeeded !== undefined) {
     data.position_needed = body.positionNeeded ? String(body.positionNeeded).trim() : null;
   }
+  if (body.pricePerPerson !== undefined) {
+    data.price_per_person = body.pricePerPerson && Number(body.pricePerPerson) > 0 ? Number(body.pricePerPerson) : null;
+  }
   if (body.status !== undefined) {
     const s = String(body.status);
     if (!["OPEN", "FULL", "CLOSED", "COMPLETED", "ARCHIVED"].includes(s)) return jsonError("Invalid status value");
