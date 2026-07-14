@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { PlayerSearch } from "@/components/player-search";
 import { PlayerAchievements } from "@/components/player-achievements";
+import { NotificationPreferences } from "@/components/notification-preferences";
 
 const menuSections = [
   {
@@ -237,6 +238,15 @@ export default function ProfilePage() {
             Find Players
           </p>
           <PlayerSearch />
+        </motion.div>
+
+        {/* ── Notification Preferences ── */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, delay: 0.3 }}
+        >
+          <NotificationPreferences userId={profile?.id ?? ""} />
         </motion.div>
 
         {/* ── Sign Out ── */}

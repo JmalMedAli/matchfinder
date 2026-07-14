@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { notifyUser, notifyUsers } from "@/lib/notify";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -105,7 +106,7 @@ export async function PATCH(
 
   if (error) return jsonError(error.message, 500);
 
-  // If match completed, increment matches_played for all accepted players
+  // If match completed, increment matches_played and notify participants
   if (data.status === "COMPLETED") {
     const { data: accepted } = await supabase
       .from("join_requests")
@@ -122,6 +123,33 @@ export async function PATCH(
           await supabase.from("profiles").update({ matches_played: (p.matches_played ?? 0) + 1 }).eq("id", pid);
         }
       }
+      // Notify all participants
+      await notifyUsers(playerIds, {
+        title: "Match completed",
+        message: `"${updated.title}" has been completed. Rate your experience!`,
+        matchId: id,
+        pushUrl: `/dashboard/matches/${id}`,
+      });
+    }
+  }
+
+  // If match cancelled, notify participants
+  if (data.status === "CLOSED" && updated.status !== "CLOSED") {
+    const { data: accepted } = await supabase
+      .from("join_requests")
+      .select("player_id")
+      .eq("match_id", id)
+      .eq("status", "ACCEPTED");
+
+    if (accepted && accepted.length > 0) {
+      await notifyUsers(
+        accepted.map((r) => r.player_id),
+        {
+          title: "Match cancelled",
+          message: `"${updated.title}" has been cancelled`,
+          matchId: id,
+        },
+      );
     }
   }
 

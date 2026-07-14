@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { notifyUser } from "@/lib/notify";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -72,13 +73,13 @@ export async function PATCH(
   }
 
   const isRemove = joinRequest.status === "ACCEPTED" && status === "REJECTED";
-  await supabase.rpc("create_notification", {
-    p_user_id: joinRequest.player_id,
-    p_title: isRemove ? "Removed from match" : `Request ${status.toLowerCase()}`,
-    p_message: isRemove
+  await notifyUser({
+    userId: joinRequest.player_id,
+    title: isRemove ? "Removed from match" : `Request ${status.toLowerCase()}`,
+    message: isRemove
       ? `You have been removed from "${match.title}"`
       : `Your request to join "${match.title}" has been ${status.toLowerCase()}`,
-    p_match_id: joinRequest.match_id,
+    matchId: joinRequest.match_id,
   });
 
   return NextResponse.json({ success: true });

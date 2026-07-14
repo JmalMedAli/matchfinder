@@ -3,6 +3,7 @@ import { Barlow, Barlow_Condensed } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
 import { QueryProvider } from "@/components/query-provider";
 import { ThemeProvider } from "@/components/theme-provider";
+import { ServiceWorkerRegistration } from "@/components/service-worker-registration";
 import "./globals.css";
 
 const barlow = Barlow({
@@ -38,6 +39,7 @@ export default function RootLayout({
           <QueryProvider>
             {children}
             <Toaster />
+            <ServiceWorkerRegistration />
           </QueryProvider>
         </ThemeProvider>
       </body>

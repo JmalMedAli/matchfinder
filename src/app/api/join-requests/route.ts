@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { notifyUser } from "@/lib/notify";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -44,6 +45,15 @@ export async function POST(req: NextRequest) {
   if (existing && existing.status === "PENDING") return jsonError("Already requested to join");
   if (existing && existing.status === "ACCEPTED") return jsonError("You are already accepted");
 
+  // Get the requesting user's profile for the notification
+  const { data: requesterProfile } = await supabase
+    .from("profiles")
+    .select("name")
+    .eq("id", user.id)
+    .single();
+
+  const requesterName = requesterProfile?.name ?? "Someone";
+
   if (existing && existing.status === "REJECTED") {
     const { data: updated, error: updateErr } = await supabase
       .from("join_requests")
@@ -52,13 +62,14 @@ export async function POST(req: NextRequest) {
       .select(`*, profiles!player_id(${PROFILE_SELECT})`)
       .single();
     if (updateErr) return jsonError(updateErr.message, 500);
-    await supabase.rpc("create_notification", {
-      p_user_id: match.organizer_id,
-      p_title: isFull ? "New waitlist request" : "New join request",
-      p_message: isFull
-        ? `Someone wants to waitlist for "${match.title}"`
-        : `Someone wants to join "${match.title}"`,
-      p_match_id: matchId,
+    await notifyUser({
+      userId: match.organizer_id,
+      title: isFull ? "New waitlist request" : "New join request",
+      message: isFull
+        ? `${requesterName} wants to waitlist for "${match.title}"`
+        : `${requesterName} wants to join "${match.title}"`,
+      matchId,
+      pushUrl: `/dashboard/matches/${matchId}`,
     });
     return NextResponse.json({ ...updated, waitlisted: isFull }, { status: 201 });
   }
@@ -71,13 +82,14 @@ export async function POST(req: NextRequest) {
 
   if (error) return jsonError(error.message, 500);
 
-  await supabase.rpc("create_notification", {
-    p_user_id: match.organizer_id,
-    p_title: isFull ? "New waitlist request" : "New join request",
-    p_message: isFull
-      ? `Someone wants to waitlist for "${match.title}"`
-      : `Someone wants to join "${match.title}"`,
-    p_match_id: matchId,
+  await notifyUser({
+    userId: match.organizer_id,
+    title: isFull ? "New waitlist request" : "New join request",
+    message: isFull
+      ? `${requesterName} wants to waitlist for "${match.title}"`
+      : `${requesterName} wants to join "${match.title}"`,
+    matchId,
+    pushUrl: `/dashboard/matches/${matchId}`,
   });
 
   return NextResponse.json({ ...joinRequest, waitlisted: isFull }, { status: 201 });
