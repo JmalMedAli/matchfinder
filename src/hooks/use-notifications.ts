@@ -30,6 +30,8 @@ export function useNotifications() {
   return useQuery({
     queryKey: ["notifications"],
     queryFn: fetchNotifications,
+    refetchInterval: 10000,
+    refetchOnWindowFocus: true,
   });
 }
 
@@ -39,6 +41,7 @@ export function useMarkNotificationsRead() {
     mutationFn: (ids?: string[]) => markAsRead(ids),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["notifications"] });
+      qc.invalidateQueries({ queryKey: ["notification-count"] });
     },
   });
 }

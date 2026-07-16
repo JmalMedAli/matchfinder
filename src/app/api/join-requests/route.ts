@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { notifyUser } from "@/lib/notify";
+import { rateLimit } from "@/lib/rate-limit";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -14,6 +15,10 @@ export async function POST(req: NextRequest) {
   const supabase = await createClient();
   const { data: { user }, error: authError } = await supabase.auth.getUser();
   if (authError || !user) return jsonError("Unauthorized", 401);
+
+  if (!rateLimit(`join-request:${user.id}`, { maxRequests: 5, windowMs: 60_000 })) {
+    return jsonError("Too many requests. Try again in a minute.", 429);
+  }
 
   let body: { matchId?: string };
   try {

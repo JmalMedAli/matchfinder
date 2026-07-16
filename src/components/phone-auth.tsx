@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -11,19 +11,17 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 export function PhoneAuth() {
   const router = useRouter();
-  const [supabase, setSupabase] = useState<SupabaseClient | null>(null);
+  const [supabase, setSupabase] = useState<SupabaseClient | null>(() => {
+    try {
+      return createClient();
+    } catch {
+      return null;
+    }
+  });
   const [phone, setPhone] = useState("");
   const [otp, setOtp] = useState("");
   const [step, setStep] = useState<"phone" | "otp">("phone");
   const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    try {
-      setSupabase(createClient());
-    } catch {
-      // Supabase not configured
-    }
-  }, []);
 
   async function handleSendOtp(e: React.FormEvent) {
     e.preventDefault();

@@ -15,7 +15,13 @@ import { motion } from "framer-motion";
 
 export default function RegisterPage() {
   const router = useRouter();
-  const [supabase, setSupabase] = useState<SupabaseClient | null>(null);
+  const [supabase, setSupabase] = useState<SupabaseClient | null>(() => {
+    try {
+      return createClient();
+    } catch {
+      return null;
+    }
+  });
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -23,12 +29,10 @@ export default function RegisterPage() {
   const [authMethod, setAuthMethod] = useState<"email" | "phone">("email");
 
   useEffect(() => {
-    try {
-      setSupabase(createClient());
-    } catch {
+    if (!supabase) {
       toast.error("Supabase is not configured. Set your .env variables.");
     }
-  }, []);
+  }, [supabase]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();

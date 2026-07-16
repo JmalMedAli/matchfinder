@@ -20,7 +20,7 @@ export function FootballFieldSelector({
   onSelect,
   onClear,
 }: FootballFieldSelectorProps) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(!value);
   const [search, setSearch] = useState("");
   const [query, setQuery] = useState("");
   const { data: fields, isPending } = useFootballFields(query || undefined);
@@ -43,12 +43,6 @@ export function FootballFieldSelector({
       setTimeout(() => inputRef.current?.focus(), 50);
     }
   }, [open]);
-
-  useEffect(() => {
-    if (!value && !open) {
-      setOpen(true);
-    }
-  }, []);
 
   // Close dropdown when clicking outside the form entirely (not on sibling inputs)
   useEffect(() => {

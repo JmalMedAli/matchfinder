@@ -7,6 +7,7 @@ import { NavSidebar, MobileHeader } from "@/components/nav-sidebar";
 import { BottomNav } from "@/components/bottom-nav";
 import { useRealtimeNotifications } from "@/hooks/use-realtime-notifications";
 import { useMatchReminders } from "@/hooks/use-match-reminders";
+import { usePushRefresh } from "@/hooks/use-push-refresh";
 
 export default function DashboardLayout({
   children,
@@ -46,6 +47,7 @@ export default function DashboardLayout({
   });
 
   useMatchReminders();
+  usePushRefresh();
 
   if (loading) {
     return (

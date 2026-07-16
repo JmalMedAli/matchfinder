@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { sendPushToUser } from "@/lib/push/send";
+import { sendEmail, buildNotificationEmail } from "@/lib/email";
 
 interface NotifyOptions {
   userId: string;
@@ -8,6 +9,7 @@ interface NotifyOptions {
   matchId?: string;
   pushUrl?: string;
   pushTag?: string;
+  skipEmail?: boolean;
 }
 
 /**
@@ -39,8 +41,28 @@ export async function notifyUser(opts: NotifyOptions) {
     // Push failures are non-critical
   });
 
-  // 3. Email notification (placeholder — configure with your email provider)
-  // TODO: Integrate with Resend/SendGrid/Supabase Edge Function for email
+  // 3. Email notification (fire-and-forget)
+  if (!opts.skipEmail) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("email")
+      .eq("id", opts.userId)
+      .single();
+
+    if (profile?.email) {
+      sendEmail({
+        to: profile.email,
+        subject: opts.title,
+        html: buildNotificationEmail(
+          opts.title,
+          opts.message,
+          opts.pushUrl || (opts.matchId ? `/dashboard/matches/${opts.matchId}` : undefined),
+        ),
+      }).catch(() => {
+        // Email failures are non-critical
+      });
+    }
+  }
 }
 
 /**

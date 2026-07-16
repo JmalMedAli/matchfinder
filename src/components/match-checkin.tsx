@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,14 +17,9 @@ export function MatchCheckin({ matchId, isOrganizer }: MatchCheckinProps) {
   const [mode, setMode] = useState<"view" | "code">("view");
   const [code, setCode] = useState("");
   const [checkedIn, setCheckedIn] = useState(false);
-  const [checkinCode, setCheckinCode] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (isOrganizer) {
-      const generated = Math.random().toString(36).substring(2, 8).toUpperCase();
-      setCheckinCode(generated);
-    }
-  }, [isOrganizer]);
+  const [checkinCode, setCheckinCode] = useState<string | null>(() =>
+    isOrganizer ? Math.random().toString(36).substring(2, 8).toUpperCase() : null,
+  );
 
   async function handleCheckin() {
     const res = await fetch(`/api/matches/${matchId}/checkin`, {
