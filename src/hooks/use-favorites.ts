@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 export interface FavoritePlayer {
   id: string;
-  favorited_player_id: string;
+  player_id: string;
   profiles: {
     id: string;
     name: string | null;

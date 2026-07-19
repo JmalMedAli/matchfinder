@@ -12,7 +12,7 @@ interface FavoriteButtonProps {
 export function FavoriteButton({ playerId, size = "sm" }: FavoriteButtonProps) {
   const { data: favorites } = useFavorites();
   const toggleFavorite = useToggleFavorite();
-  const isFavorited = favorites?.some((f) => f.favorited_player_id === playerId);
+  const isFavorited = favorites?.some((f) => f.player_id === playerId);
 
   const iconSize = size === "sm" ? "h-4 w-4" : "h-5 w-5";
 
