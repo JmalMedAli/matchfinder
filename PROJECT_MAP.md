@@ -1,237 +1,122 @@
 # MatchFinder — Project Map
 
+Inventory of what exists: features, routes, API surface, schema. Update per-feature (see AGENTS.md workflow step 9).
+**How agents work** → `AGENTS.md` (single source of truth). **What's currently broken** → `docs/technical-debt.md`.
+
+**Last refreshed:** 2026-07-19 (backfilled everything after Phase 7 from git history + code audit).
+
 ## Tech Stack
-- **Framework:** Next.js 16 (App Router, Turbopack)
-- **React:** 19
-- **Styling:** Tailwind CSS 4 + shadcn/ui (Base UI)
-- **Database + Auth:** Supabase (Postgres + Auth + Realtime, Google + Email/Phone OTP)
-- **State:** Zustand 5 (client) + TanStack Query 5 (server) + Supabase Realtime (live events)
-- **Deploy:** Vercel
+- **Framework:** Next.js 16 (App Router, Turbopack) — all pages `"use client"`; App Router used as a file router, no RSC data fetching
+- **React:** 19 · **Styling:** Tailwind CSS 4 + shadcn/ui (base-nova style, Base UI primitives) + Framer Motion
+- **Database + Auth:** Supabase (Postgres + Auth + Realtime + Storage; Google OAuth, Email, Phone OTP)
+- **State:** TanStack Query 5 (server state) + Zustand 5 (UI-only) + Supabase Realtime (invalidation events)
+- **Notifications:** in-app (RPC) + web push (`web-push` + `public/sw.js`) + email (Resend) via unified `src/lib/notify.ts`
+- **Maps:** Leaflet / react-leaflet · **Sharing:** qrcode.react · **Deploy:** Vercel
 
 ## Directory Structure
 ```
 src/
 ├── app/
-│   ├── auth/callback/route.ts      # Supabase OAuth callback
-│   ├── dashboard/                   # Authenticated route group (no URL prefix)
-│   │   ├── layout.tsx               # Dashboard layout: auth guard + userId + realtime notifications
-│   │   ├── page.tsx                 # Dashboard home (upcoming matches + create)
-│   │   ├── matches/
-│   │   │   ├── page.tsx             # Matches list (URL-persisted filters + search + pagination)
-│   │   │   ├── new/page.tsx         # Create match form
-│   │   │   └── [id]/
-│   │   │       ├── page.tsx         # Match detail (view, join, manage + field card + Google Maps)
-│   │   │       └── edit/page.tsx    # Edit match form (field selector)
-│   │   ├── nearby/page.tsx          # Nearby Matches (geolocation, distance sort, filters)
-│   │   ├── my-matches/page.tsx      # Player's accepted/pending/rejected + withdraw
-│   │   └── notifications/page.tsx   # Notifications list + mark all as read
-│   │   └── profile/page.tsx         # Profile edit (image upload, fields, privacy toggles)
-│   ├── api/
-│   │   ├── matches/
-│   │   │   ├── route.ts             # GET (list+filter) + POST (create, footballFieldId)
-│   │   │   └── [id]/route.ts        # GET (joins football_fields) + PATCH + DELETE
-│   │   ├── join-requests/
-│   │   │   ├── route.ts             # POST (create/re-request after rejection, prevent duplicate pending)
-│   │   │   ├── [id]/route.ts        # PATCH (accept/reject) + DELETE (withdraw pending)
-│   │   │   └── mine/route.ts        # GET (player's own requests)
-│   │   └── notifications/
-│   │       ├── route.ts             # GET (list)
-│   │       └── read/route.ts        # PATCH (mark as read)
-│   ├── login/page.tsx               # Email/Phone tabs + Google OAuth
-│   ├── register/page.tsx            # Email/Phone tabs + Google OAuth
-│   ├── page.tsx                     # Landing page
-│   └── layout.tsx                   # Root layout (QueryProvider + Toaster)
-├── components/
-│   ├── ui/                          # shadcn/ui components (textarea, sonner with local theme hook)
-│   ├── match-card.tsx               # Match list card
-│   ├── nearby-match-card.tsx        # Nearby match card (distance, slots, travel time)
-│   ├── distance-filter.tsx          # Distance filter pills (3/5/10/20km)
-│   ├── city-fallback.tsx            # City selector for denied location
-│   ├── profile-form.tsx             # Profile edit form (image upload, fields, privacy toggles)
-│   ├── match-form.tsx               # Create form (field selector, textarea, past-date validation)
-│   ├── football-field-selector.tsx  # Airbnb-style field search → list → select → confirm
-│   ├── phone-auth.tsx               # Phone OTP send + verify
-│   ├── nav-sidebar.tsx              # Dashboard nav (profile loading skeleton, unread badge, connection status)
-│   ├── connection-status.tsx        # Realtime connection indicator (green dot = Live)
-│   └── query-provider.tsx           # TanStack Query provider
-├── hooks/
-│   ├── use-matches.ts               # Match CRUD queries/mutations (football_field_id, football_fields join)
-│   ├── use-join-requests.ts         # Join request queries/mutations + withdraw
-│   ├── use-notifications.ts         # Notification queries/mutations
-│   ├── use-football-fields.ts       # Football field queries (search + single)
-│   ├── use-geolocation.ts           # Browser geolocation with permission states + retry
-│   ├── use-profile.ts               # Profile query + update mutation + avatar upload
-│   ├── use-realtime.ts              # Core Supabase Realtime channel management
-│   ├── use-realtime-notifications.ts # Realtime notification subscription + toast + badge
-│   └── use-realtime-join-requests.ts # Realtime join request subscription per match
-├── types/
-│   ├── football-field.ts            # FootballField type definition
-│   └── profile.ts                   # Profile type, privacy filter, constants
-├── stores/
-│   └── ui-store.ts                  # Zustand UI state
-├── lib/
-│   ├── supabase/
-│   │   ├── client.ts                # Browser Supabase client (singleton, validates env)
-│   │   ├── server.ts                # Server Supabase client with cookies
-│   │   └── middleware.ts            # Auth guard for middleware
-│   ├── logger.ts                    # Async fire-and-forget logger
-│   ├── geo.ts                       # Haversine distance, travel time estimation, constants
-│   └── utils.ts                     # cn() utility
-├── middleware.ts                     # Next.js middleware (session refresh + auth redirect)
-└── index.ts                         # Re-exports
-supabase/
-├── migration.sql                    # SQL schema v2: hardened RLS + atomic capacity + updated_at trigger
-├── migration-v3.sql                 # Football fields table + seed data + RLS + matches column
-└── migration-v4.sql                 # Profile fields + privacy settings + avatars storage bucket
+│   ├── page.tsx, login/, register/, auth/callback/    # public + auth
+│   ├── player/[id]/                                   # public player profile
+│   ├── dashboard/                                     # authenticated shell (sidebar + mobile bottom nav)
+│   │   ├── page.tsx                                   # home: greeting, quick actions, calendar, leaderboard, activity, popular fields
+│   │   ├── matches/ (page, new/, [id]/, [id]/edit/)   # list · create · detail · edit
+│   │   ├── nearby/, my-matches/, archived/            # discovery · player's requests · archived matches
+│   │   ├── fields/ (page, [id]/)                      # fields discovery: list, map, detail
+│   │   ├── conversations/ (page, [id]/)               # chat: DMs + per-match group chats
+│   │   ├── notifications/, profile/ (+edit/), admin/  # notifications · profile hub · admin stats
+│   └── api/                                           # 32 route files — see API table
+├── components/          # ~60 feature components + components/ui/ (13 shadcn primitives)
+├── hooks/               # 27 domain hooks (use-matches, use-messages, use-push-notifications, use-realtime…)
+├── lib/                 # supabase/{client,server,middleware}, notify, email, push/send, geo, rate-limit, logger, utils
+├── stores/ui-store.ts   # Zustand (sidebar state only)
+└── types/               # chat, football-field, profile
+docs/technical-debt.md   # living debt register
+supabase/                # migration.sql + v3 (fields) + v4 (profile) + v5 (chat) — INCOMPLETE, see below
+public/sw.js             # push service worker
 ```
 
-## Database Schema (Supabase SQL)
-- **profiles** — id (UUID, PK), name, email, image, position, city, bio, phone, whatsapp, facebook, instagram, show_phone, show_whatsapp, show_facebook, show_instagram, created_at, updated_at
-- **matches** — id (UUID), title, description, date, location, football_field_id (FK → football_fields, nullable), max_players (2–100), status (OPEN/FULL/CLOSED/COMPLETED), organizer_id (FK → profiles), created_at, updated_at
-- **join_requests** — id (UUID), status (PENDING/ACCEPTED/REJECTED), message, match_id (FK → matches), player_id (FK → profiles), created_at, updated_at; UNIQUE (match_id, player_id)
-- **notifications** — id (UUID), title, message, read, user_id (FK → profiles), created_at, updated_at
-- **football_fields** — id (UUID), name, address, city, latitude, longitude, image_url, created_at
-- **RLS** enabled on all tables; notification INSERT restricted to `auth.uid() = user_id`
-- **Triggers:** auto-creates a profile row on auth.users insert; auto-updates `updated_at` on all tables
-- **Functions:** `create_notification()` (security definer), `accept_join_request()` (atomic capacity check)
-- **Seed data:** 12 football fields across 6 cities in Banlieue Sud Tunis
+## Database Schema
+**Covered by migrations in `supabase/`:**
+- **profiles** — identity, position, city, bio, contact fields + `show_*` privacy toggles; auto-created on signup (trigger)
+- **matches** — title, description, date, location, `football_field_id` FK, max_players, status (OPEN/FULL/CLOSED/COMPLETED/ARCHIVED), organizer_id
+- **join_requests** — PENDING/ACCEPTED/REJECTED (+ waitlist logic in code), UNIQUE(match_id, player_id)
+- **notifications** — title, message, read, user_id, match_id
+- **football_fields** — name, address, city, lat/lng, image; seeded with 12 fields across 6 Banlieue Sud Tunis cities
+- **conversations / conversation_participants / messages** — chat (v5): DMs + auto-managed per-match group chats via triggers
+- **Functions/triggers:** `handle_new_user`, `update_updated_at`, `accept_join_request` (atomic capacity), `remove_accepted_player`, `create_notification`, `get_or_create_dm`, `get_unread_counts`, chat-membership triggers
 
-## Routes
-| Page | Path | Auth |
-|------|------|------|
-| Landing | `/` | No |
-| Login | `/login` | No |
-| Register | `/register` | No |
-| Dashboard | `/dashboard` | Yes |
-| **Nearby Matches** | **`/dashboard/nearby`** | **Yes** |
-| Matches list | `/dashboard/matches` | Yes |
-| Create match | `/dashboard/matches/new` | Yes |
-| Match detail | `/dashboard/matches/[id]` | Yes |
-| Edit match | `/dashboard/matches/[id]/edit` | Yes |
-| My matches | `/dashboard/my-matches` | Yes |
-| Notifications | `/dashboard/notifications` | Yes |
-| **My Profile** | **`/dashboard/profile`** | **Yes** |
+**⚠ Used in code but NOT yet in `supabase/` migrations** (backfill when touched — tracked in `docs/technical-debt.md`):
+`reviews`, `favorites`, `match_templates`, `match_photos`, `match_availability`, `match_checkins`, `match_awards`, `match_player_stats`, `player_achievements`, `activity_feed`, `message_reactions`, `push_subscriptions`, `push_delivery_log`, `profiles.role`, and matches columns `position_needed`, `price_per_person`, `motm_player_id`, `fair_play_player_id`.
+
+## Pages
+| Path | Purpose | Auth |
+|------|---------|------|
+| `/` | Landing (hero video, how-it-works, features, social proof, CTA) | No |
+| `/login`, `/register` | Email / Phone OTP / Google OAuth (split layout) | No |
+| `/player/[id]` | Public player profile | No |
+| `/dashboard` | Home hub: calendar, sections, leaderboard, activity feed, popular fields | Yes |
+| `/dashboard/matches` (+`/new`, `/[id]`, `/[id]/edit`) | Match CRUD, detail with join/manage/check-in/awards/review | Yes |
+| `/dashboard/nearby` | Geolocation discovery, distance filters, city fallback | Yes |
+| `/dashboard/my-matches` | Accepted / pending / rejected + withdraw | Yes |
+| `/dashboard/archived` | Archived matches | Yes |
+| `/dashboard/fields` (+`/[id]`) | Fields discovery: list, map view, field detail with matches | Yes |
+| `/dashboard/conversations` (+`/[id]`) | Chat list + thread (DMs, group, reactions, typing) | Yes |
+| `/dashboard/notifications` | Notification list, mark read, preferences | Yes |
+| `/dashboard/profile` (+`/edit`) | Profile hub + edit (avatar, privacy toggles) | Yes |
+| `/dashboard/admin` | Admin stats (requires `profiles.role = 'admin'`) | Yes |
 
 ## API Endpoints
-| Method | Path | Description |
-|--------|------|-------------|
-| GET | `/api/matches` | List matches (filter: status, search, page) |
-| POST | `/api/matches` | Create match (footballFieldId, past-date validation) |
-| GET | `/api/matches/[id]` | Get match detail (joins football_fields) |
-| PATCH | `/api/matches/[id]` | Update match (organizer only, footballFieldId) |
-| DELETE | `/api/matches/[id]` | Delete match (organizer only) |
-| POST | `/api/join-requests` | Send join request / re-request after rejection |
-| PATCH | `/api/join-requests/[id]` | Accept/reject (organizer only) |
-| DELETE | `/api/join-requests/[id]` | Withdraw pending request (player only) |
-| GET | `/api/join-requests/mine` | Player's own requests |
-| GET | `/api/notifications` | List notifications |
-| PATCH | `/api/notifications/read` | Mark as read |
+| Area | Routes |
+|------|--------|
+| Matches | `GET/POST /api/matches` · `GET/PATCH/DELETE /api/matches/[id]` · `GET /api/matches/featured` · `GET /api/matches/calendar` |
+| Post-match | `/api/matches/[id]/checkin` · `/awards` · `/stats` · `/post-review` |
+| Join requests | `POST /api/join-requests` · `PATCH/DELETE /api/join-requests/[id]` · `GET …/mine` · `GET …/incoming` |
+| Notifications | `GET /api/notifications` · `PATCH …/read` · `…/remind` |
+| Push | `POST /api/push/subscribe` · `…/unsubscribe` · `GET …/vapid-key` |
+| Chat | `GET/POST /api/conversations` · `PATCH …/[id]/read` · `GET/POST /api/messages` · `…/[id]/reactions` |
+| Fields | `GET /api/fields` · `GET /api/fields/[id]` |
+| Players | `GET /api/players/search` · `GET /api/players/[id]/stats` |
+| Community | `/api/reviews` · `/api/favorites` · `/api/leaderboard` · `/api/achievements` · `/api/activity` |
+| Tools | `/api/match-templates` (+`[id]`) · `/api/match-availability` · `/api/match-photos` |
+| System | `GET /api/admin/stats` · `GET /api/cron/match-reminder` (⚠ see debt register) |
 
-All API routes have: UUID validation, try/catch on `req.json()`, proper auth checks.
+Route conventions (auth → UUID validation → JSON error shape) are defined in `AGENTS.md`.
 
-## Realtime Architecture
-```
-Supabase Realtime → useRealtimeChannel (core hook)
-    ↓
-├── useRealtimeNotifications (notifications table INSERT)
-│   ├── Shows toast notification
-│   ├── Invalidates ["notifications"] query
-│   └── Updates unread badge via onUnreadCountChange callback
-│
-└── useRealtimeJoinRequests (join_requests table per match_id)
-    ├── Invalidates ["match", id] query → match detail auto-updates
-    ├── Invalidates ["matches"] query → list auto-updates
-    └── Invalidates ["join-requests"] query → my-matches auto-updates
-```
+## Feature Inventory
+- **Auth & profiles:** email/phone-OTP/Google auth; profiles with avatar upload, position, city, bio, per-field contact privacy; public player pages; player search
+- **Matches:** CRUD with field selector, price-per-person (informational), position-needed, past-date validation; templates; featured matches; archive/delete; bulk actions; share via WhatsApp/SMS/copy/QR
+- **Join lifecycle:** request → accept/reject (atomic capacity) → withdraw → re-request; waitlist with auto-promote; organizer can remove players
+- **Discovery:** nearby (geolocation + Haversine, distance pills, city fallback), fields directory with map view + popular fields, home calendar with day detail sheet
+- **Chat:** DMs + auto-managed per-match group chats, reactions, typing indicator, unread counts, realtime
+- **Notifications:** in-app realtime (toast + badge) + web push (service worker, subscription mgmt, preferences) + email (Resend); match reminders (client hook + cron route)
+- **Post-match:** check-in, reviews/ratings, player stats, MOTM + fair-play awards, achievements, leaderboard, photo gallery
+- **Community:** activity feed, leaderboard, public profiles, sharing
+- **Platform:** dark mode, mobile-first shell (bottom nav), admin panel, Framer Motion design language
+
+## Realtime
+`useRealtimeChannel` (core lifecycle hook) → subscriptions on `notifications` (INSERT → toast/badge), `join_requests` (per match), `messages` (per conversation), typing broadcast. All events **invalidate TanStack Query keys** — never mutate caches directly.
 
 ## Environment Variables
 ```
-NEXT_PUBLIC_SUPABASE_URL=           # Supabase project URL
-NEXT_PUBLIC_SUPABASE_ANON_KEY=      # Supabase anon/public key
+NEXT_PUBLIC_SUPABASE_URL=        # required
+NEXT_PUBLIC_SUPABASE_ANON_KEY=   # required
+NEXT_PUBLIC_VAPID_PUBLIC_KEY=    # web push
+VAPID_PRIVATE_KEY=               # web push
+RESEND_API_KEY=                  # email (absent → email silently disabled)
+NEXT_PUBLIC_SITE_URL=            # domain only, no protocol
 LOG_LEVEL=debug
 ```
 
-## Setup Required
-1. Create a Supabase project at https://supabase.com
-2. Run `supabase/migration.sql` in the Supabase SQL Editor (drop existing tables first)
-3. Run `supabase/migration-v3.sql` (football fields)
-4. Enable Google OAuth provider in the Supabase dashboard (Authentication → Providers)
-5. Enable Phone OTP provider in the Supabase dashboard (Authentication → Providers → Phone)
-6. Enable Realtime on tables: `notifications`, `join_requests`, `matches` (Database → Replication)
-7. Set `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` in `.env`
-8. Add OAuth redirect URL in Supabase: `http://localhost:3000/auth/callback`
+## Setup
+1. Create a Supabase project; run `supabase/migration.sql`, then `-v3`, `-v4`, `-v5` in order.
+   ⚠ This does **not** produce the full production schema — see the drift list above / `docs/technical-debt.md`.
+2. Enable providers: Google OAuth, Phone OTP (Authentication → Providers).
+3. Enable Realtime on: `notifications`, `join_requests`, `matches` (v5 adds `messages`, `conversation_participants`).
+4. Create Storage bucket `avatars` (v4) — public read, authenticated upload.
+5. Set env vars in `.env`; add OAuth redirect `http://localhost:3000/auth/callback` in Supabase.
+6. `npm install && npm run dev`.
 
-## Phase 1 Hardening (Applied)
-- **Security:** notification INSERT RLS tightened to `auth.uid() = user_id`, `create_notification()` is security definer, capacity enforcement via atomic `accept_join_request()` RPC
-- **DB:** `updated_at` auto-update trigger on all tables, `max_players` upper bound (100)
-- **API robustness:** UUID validation + try/catch on `req.json()` in all routes
-- **Code cleanup:** removed `prisma/schema.prisma`, `pg`, `next-themes`, duplicate Toaster, unused imports
-- **Performance:** `NavContent` extracted to module scope to prevent React remount on every render
-- **sonner.tsx:** replaced `next-themes` with local MutationObserver hook
-
-## Phase 2 UX Improvements (Applied)
-- **Profile loading:** skeleton pulse while profile loads, no more "User" flash
-- **Withdraw requests:** DELETE endpoint + button on match detail + my-matches pending list
-- **Re-request after rejection:** POST resets rejected request to PENDING, "Request again" button
-- **Past-date validation:** API rejects past dates, forms set `min` on date input + client-side check
-- **Description textarea:** shadcn/ui Textarea component for match descriptions
-- **Unread badge:** NavSidebar shows unread notification count, refreshes on tab focus
-- **Filters in URL:** matches list reads/writes filters to search params (shareable URLs)
-
-## Phase 3 Realtime (Applied)
-- **Core hook:** `useRealtimeChannel` — manages Supabase channel lifecycle, proper cleanup, deduplication
-- **Realtime notifications:** subscribe to notifications INSERT → toast + badge + query invalidation
-- **Realtime join requests:** subscribe to join_requests per match → match detail auto-updates
-- **Dashboard layout:** lifts userId, mounts realtime notifications, passes unread callback to NavSidebar
-- **Connection status:** green/red dot indicator in sidebar footer (Live/Offline)
-- **TanStack Query integration:** all realtime events invalidate existing queries
-
-## Phase 4 Football Fields (Applied)
-- **Database:** `football_fields` table with name, address, city, latitude, longitude, image_url
-- **Seed data:** 12 fields across 6 Banlieue Sud Tunis cities (Boumhel, Rades, Ezzahra, Hammam Lif, Megrine, Ben Arous)
-- **Matches column:** `football_field_id` nullable FK on matches (backward compatible)
-- **Field selector:** Airbnb-style search → list → select → confirm component
-- **Match detail:** field card with image, name, address, city + Google Maps link
-- **RLS:** authenticated users can view all fields, all authenticated can modify
-- **API:** POST/PATCH accept `footballFieldId`, GET joins `football_fields`
-
-## Phase 5 Nearby Matches (Applied)
-- **Geolocation:** `useGeolocation` hook — browser permission request, loading/granted/denied/prompt states, retry
-- **Distance calculation:** Haversine formula in `src/lib/geo.ts`, travel time estimation (~30km/h urban average)
-- **Nearby page:** `/dashboard/nearby` — main feature, sorts all OPEN matches by distance from user
-- **Distance filters:** 3km, 5km, 10km, 20km pill buttons (shown when location granted)
-- **City fallback:** native select dropdown for 6 Banlieue Sud Tunis cities (shown when location denied/prompt)
-- **Match cards:** distance badge (m/km), estimated travel time, remaining slots, date/time, city
-- **API update:** matches GET now joins `football_fields` for latitude/longitude coordinates
-- **Nav:** "Nearby Matches" added as second nav item (MapPin icon)
-- **Performance:** TanStack Query `staleTime: 30s`, client-side sort/filter with `useMemo`, grid layout
-
-## Phase 6 Profile Enhancement (Applied)
-- **Database:** profiles table extended with position, city, bio, phone, whatsapp, facebook, instagram, show_phone, show_whatsapp, show_facebook, show_instagram
-- **Storage:** Supabase Storage bucket `avatars` (public read, authenticated upload own folder)
-- **Profile page:** `/dashboard/profile` — image upload with preview, name, position select, city select, bio textarea, contact fields with privacy toggles
-- **Privacy model:** `filterPublicProfile()` — strips contact fields based on `show_*` booleans unless viewer is the profile owner
-- **Match detail:** organizer shows position + privacy-aware contact links (Phone, WhatsApp, Facebook, Instagram)
-- **Join requests:** player shows position + avatar image + privacy-aware contact links
-- **Match card:** organizer shows position after name
-- **API:** all match/join-request selects now include full profile fields
-- **Types:** `MatchOrganizer` expanded with all profile fields; `filterPublicProfile()` utility in `src/types/profile.ts`
-- **Nav:** "My Profile" added as last nav item (User icon)
-
-## Phase 7 UI/UX Redesign (Applied)
-- **Design system:** Football green (#16A34A) primary, dark navy (#0F172A) secondary, orange (#F97316) accent
-- **Typography:** Barlow (body) + Barlow Condensed (headings) via next/font/google
-- **Colors:** oklch color tokens in globals.css, CSS variables for light/dark modes
-- **Mobile nav:** Bottom nav component (5 items: Home, Nearby, Create, My Matches, Profile) — fixed bottom, hidden on desktop
-- **Dashboard layout:** Bottom padding for mobile (pb-24), sidebar hidden on mobile
-- **Landing page:** Redesigned with marketplace pattern — hero with stats, HowItWorks (4 steps), Features (6 cards), SocialProof (3 testimonials), CTA section, full footer
-- **Auth pages:** Split-layout design — green branding panel (desktop) + form, Google SVG logo, icon tabs (Mail/Phone), larger touch targets (h-11)
-- **Dashboard:** Date card with day/month, spots left indicator, staggered animations, empty state with icon
-- **Match cards:** Status badges, date/time/location with icons, organizer position, spots counter
-- **Match detail:** Back link, date/time grid, field card with Google Maps, organizer avatar + contact links, request status icons
-- **Match form:** Card sections (info + logistics), icon labels, larger inputs
-- **Notifications:** Unread "NEW" badge, "Earlier" section, empty state with icon
-- **Nearby:** Compass icon header, location denied banner with icon, grid layout
-- **My Matches:** Status section headers with icons (CheckCircle/Hourglass/XCircle), date + location in cards
-- **All pages:** Framer Motion animations (fade-in + slide-up, staggered lists), font-[family-name:var(--font-barlow-condensed)] for headings
-- **New components:** landing-hero, how-it-works, features, social-proof, cta-section, bottom-nav
+## History
+Development history (Phases 1–7 hardening/UX/realtime/fields/nearby/profile/redesign, then chat, reviews, waitlist, gamification, mobile V2, push, calendar, fields discovery) is tracked in git: `git log --oneline`. This file describes the **current** state only.
