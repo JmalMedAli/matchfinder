@@ -38,7 +38,7 @@ export async function POST(
         rating: overallRating,
         goals_scored: goalsScored ?? 0,
       },
-      { onConflict: "match_id,reviewer_id" },
+      { onConflict: "match_id,reviewer_id,player_id" },
     );
 
   if (reviewError) {

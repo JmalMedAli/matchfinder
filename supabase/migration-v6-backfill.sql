@@ -169,16 +169,23 @@ ALTER TABLE reviews ENABLE ROW LEVEL SECURITY;
 --     for (match_id, reviewer_id))
 -- No UPDATE or DELETE policy currently exists in production.
 --
--- CONFLICT TARGET NOTE: the real UNIQUE constraint is 3-column
--- (match_id, reviewer_id, player_id). As of this migration,
--- src/app/api/matches/[id]/post-review/route.ts:41 still upserts
--- with onConflict: "match_id,reviewer_id" (2 columns) - that does
--- not match this constraint and Postgres rejects it (42P10), so
--- every post-match review submission currently fails in
--- production. This is a known, still-open code bug, tracked
--- separately - not fixed by this migration (schema is correct as
--- written above; the application code needs the conflict target
--- corrected to "match_id,reviewer_id,player_id").
+-- CONFLICT TARGET NOTE [FIXED]: the real UNIQUE constraint is
+-- 3-column (match_id, reviewer_id, player_id). Previously,
+-- src/app/api/matches/[id]/post-review/route.ts:41 upserted with
+-- onConflict: "match_id,reviewer_id" (2 columns), which did not
+-- match this constraint and Postgres rejected it (42P10), causing
+-- every post-match review submission to fail in production. Fixed
+-- in application code (conflict target corrected to
+-- "match_id,reviewer_id,player_id") - no schema change needed.
+--
+-- REMAINING GAP [DEFERRED]: production has no UPDATE policy on
+-- reviews (see line 170). The upsert's conflict branch runs as an
+-- UPDATE under RLS, so a second submission for the same match would
+-- still be rejected by RLS even with the corrected conflict target.
+-- Not currently reachable - post-match-review.tsx is a one-shot
+-- modal with no resubmission path - so not fixed here. Would need a
+-- future migration adding an UPDATE policy if resubmission is ever
+-- supported.
 
 
 -- ============================================================
