@@ -1,22 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
-import { notifyUser, notifyUsers } from "@/lib/notify";
-
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-const PROFILE_SELECT = "name, image, position, city, bio, phone, whatsapp, facebook, instagram, show_phone, show_whatsapp, show_facebook, show_instagram";
-
-function jsonError(message: string, status = 400) {
-  return NextResponse.json({ error: message }, { status });
-}
+import { notifyUsers } from "@/lib/notify";
+import { UUID_RE, PROFILE_SELECT, jsonError, requireAuth, parseJsonBody } from "@/lib/api/helpers";
 
 export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const supabase = await createClient();
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
-  if (authError || !user) return jsonError("Unauthorized", 401);
+  const { supabase, error: authError } = await requireAuth();
+  if (authError) return authError;
 
   const { id } = await params;
   if (!UUID_RE.test(id)) return jsonError("Invalid match ID format");
@@ -41,9 +32,8 @@ export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const supabase = await createClient();
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
-  if (authError || !user) return jsonError("Unauthorized", 401);
+  const { supabase, user, error: authError } = await requireAuth();
+  if (authError) return authError;
 
   const { id } = await params;
   if (!UUID_RE.test(id)) return jsonError("Invalid match ID format");
@@ -57,12 +47,8 @@ export async function PATCH(
   if (!existing) return jsonError("Match not found", 404);
   if (existing.organizer_id !== user.id) return jsonError("Only the organizer can edit", 403);
 
-  let body: Record<string, unknown>;
-  try {
-    body = await req.json();
-  } catch {
-    return jsonError("Invalid JSON body");
-  }
+  const { body, error: bodyError } = await parseJsonBody(req);
+  if (bodyError) return bodyError;
 
   const data: Record<string, unknown> = {};
   if (body.title !== undefined) data.title = String(body.title).trim();
@@ -160,9 +146,8 @@ export async function DELETE(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const supabase = await createClient();
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
-  if (authError || !user) return jsonError("Unauthorized", 401);
+  const { supabase, user, error: authError } = await requireAuth();
+  if (authError) return authError;
 
   const { id } = await params;
   if (!UUID_RE.test(id)) return jsonError("Invalid match ID format");
@@ -186,19 +171,14 @@ export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const supabase = await createClient();
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
-  if (authError || !user) return jsonError("Unauthorized", 401);
+  const { supabase, user, error: authError } = await requireAuth();
+  if (authError) return authError;
 
   const { id } = await params;
   if (!UUID_RE.test(id)) return jsonError("Invalid match ID format");
 
-  let body: { action?: string };
-  try {
-    body = await req.json();
-  } catch {
-    return jsonError("Invalid JSON body");
-  }
+  const { body, error: bodyError } = await parseJsonBody<{ action?: string }>(req);
+  if (bodyError) return bodyError;
 
   if (body.action !== "remind") return jsonError("Invalid action");
 

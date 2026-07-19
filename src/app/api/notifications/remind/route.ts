@@ -1,10 +1,9 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { requireAuth } from "@/lib/api/helpers";
 
 export async function POST() {
-  const supabase = await createClient();
-  const { data: { user }, error } = await supabase.auth.getUser();
-  if (error || !user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const { supabase, error } = await requireAuth();
+  if (error) return error;
 
   const now = new Date();
   const oneHourLater = new Date(now.getTime() + 60 * 60 * 1000);

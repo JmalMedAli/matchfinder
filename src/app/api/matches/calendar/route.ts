@@ -1,14 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { requireAuth } from "@/lib/api/helpers";
 
 export const dynamic = "force-dynamic";
 
 const PROFILE_SELECT = "name, image, position";
 
 export async function GET(req: NextRequest) {
-  const supabase = await createClient();
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
-  if (authError || !user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const { supabase, user, error: authError } = await requireAuth();
+  if (authError) return authError;
 
   const { searchParams } = new URL(req.url);
   const from = searchParams.get("from");

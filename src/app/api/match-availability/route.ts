@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+import { UUID_RE, requireAuth, parseJsonBody } from "@/lib/api/helpers";
 
 export async function GET(req: NextRequest) {
   const supabase = await createClient();
@@ -22,16 +21,11 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const supabase = await createClient();
-  const { data: { user }, error } = await supabase.auth.getUser();
-  if (error || !user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const { supabase, user, error } = await requireAuth();
+  if (error) return error;
 
-  let body: { matchId?: string; status?: string; note?: string };
-  try {
-    body = await req.json();
-  } catch {
-    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
-  }
+  const { body, error: bodyError } = await parseJsonBody<{ matchId?: string; status?: string; note?: string }>(req, "Invalid JSON");
+  if (bodyError) return bodyError;
 
   const { matchId, status: availStatus, note } = body;
   if (!matchId || !availStatus) {

@@ -1,30 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
 import { notifyUser } from "@/lib/notify";
-
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-function jsonError(message: string, status = 400) {
-  return NextResponse.json({ error: message }, { status });
-}
+import { UUID_RE, jsonError, requireAuth, parseJsonBody } from "@/lib/api/helpers";
 
 export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const supabase = await createClient();
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
-  if (authError || !user) return jsonError("Unauthorized", 401);
+  const { supabase, user, error: authError } = await requireAuth();
+  if (authError) return authError;
 
   const { id } = await params;
   if (!UUID_RE.test(id)) return jsonError("Invalid request ID format");
 
-  let body: { status?: string };
-  try {
-    body = await req.json();
-  } catch {
-    return jsonError("Invalid JSON body");
-  }
+  const { body, error: bodyError } = await parseJsonBody<{ status?: string }>(req);
+  if (bodyError) return bodyError;
 
   const { status } = body;
   if (!status || !["ACCEPTED", "REJECTED"].includes(status)) {
@@ -89,9 +78,8 @@ export async function DELETE(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const supabase = await createClient();
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
-  if (authError || !user) return jsonError("Unauthorized", 401);
+  const { supabase, user, error: authError } = await requireAuth();
+  if (authError) return authError;
 
   const { id } = await params;
   if (!UUID_RE.test(id)) return jsonError("Invalid request ID format");

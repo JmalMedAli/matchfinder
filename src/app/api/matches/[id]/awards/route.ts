@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { requireAuth } from "@/lib/api/helpers";
 
 export const dynamic = "force-dynamic";
 
@@ -42,9 +43,8 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const { supabase, user, error: authError } = await requireAuth();
+  if (authError) return authError;
 
   const body = await req.json();
   const { recipientId, awardType } = body;

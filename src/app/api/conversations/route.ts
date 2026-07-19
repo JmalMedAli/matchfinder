@@ -1,16 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { jsonError, requireAuth, parseJsonBody } from "@/lib/api/helpers";
 
 const PROFILE_SELECT = "id, name, image";
 
-function jsonError(message: string, status = 400) {
-  return NextResponse.json({ error: message }, { status });
-}
-
 export async function GET(req: NextRequest) {
-  const supabase = await createClient();
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
-  if (authError || !user) return jsonError("Unauthorized", 401);
+  const { supabase, user, error: authError } = await requireAuth();
+  if (authError) return authError;
 
   const { searchParams } = new URL(req.url);
   const matchId = searchParams.get("matchId");
@@ -98,16 +93,11 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const supabase = await createClient();
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
-  if (authError || !user) return jsonError("Unauthorized", 401);
+  const { supabase, user, error: authError } = await requireAuth();
+  if (authError) return authError;
 
-  let body: Record<string, unknown>;
-  try {
-    body = await req.json();
-  } catch {
-    return jsonError("Invalid JSON body");
-  }
+  const { body, error: bodyError } = await parseJsonBody(req);
+  if (bodyError) return bodyError;
 
   const targetId = body.targetId as string | undefined;
   if (!targetId) return jsonError("targetId is required");

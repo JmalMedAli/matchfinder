@@ -1,23 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
-
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-const PROFILE_SELECT = "name, image, position, city, bio, phone, whatsapp, facebook, instagram, show_phone, show_whatsapp, show_facebook, show_instagram";
-
-async function requireAuth() {
-  const supabase = await createClient();
-  const { data: { user }, error } = await supabase.auth.getUser();
-  if (error || !user) return { supabase: null, user: null, error: NextResponse.json({ error: "Unauthorized" }, { status: 401 }) };
-  return { supabase, user, error: null };
-}
-
-function jsonError(message: string, status = 400) {
-  return NextResponse.json({ error: message }, { status });
-}
+import { UUID_RE, PROFILE_SELECT, jsonError, requireAuth, parseJsonBody } from "@/lib/api/helpers";
 
 export async function GET(req: NextRequest) {
-  const { supabase, user, error: authError } = await requireAuth();
+  const { supabase, error: authError } = await requireAuth();
   if (authError) return authError;
 
   const { searchParams } = new URL(req.url);
@@ -57,12 +42,8 @@ export async function POST(req: NextRequest) {
   const { supabase, user, error: authError } = await requireAuth();
   if (authError) return authError;
 
-  let body: Record<string, unknown>;
-  try {
-    body = await req.json();
-  } catch {
-    return jsonError("Invalid JSON body");
-  }
+  const { body, error: bodyError } = await parseJsonBody(req);
+  if (bodyError) return bodyError;
 
   const title = body.title as string | undefined;
   const description = body.description as string | undefined;

@@ -1,19 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
-
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+import { UUID_RE, requireAuth, parseJsonBody } from "@/lib/api/helpers";
 
 export async function PATCH(req: NextRequest) {
-  const supabase = await createClient();
-  const { data: { user }, error } = await supabase.auth.getUser();
-  if (error || !user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const { supabase, user, error } = await requireAuth();
+  if (error) return error;
 
-  let body: { ids?: unknown };
-  try {
-    body = await req.json();
-  } catch {
-    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
-  }
+  const { body, error: bodyError } = await parseJsonBody<{ ids?: unknown }>(req);
+  if (bodyError) return bodyError;
 
   const { ids } = body;
 

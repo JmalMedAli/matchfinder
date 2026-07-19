@@ -1,12 +1,9 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
-
-const PROFILE_SELECT = "name, image, position, city";
+import { requireAuth } from "@/lib/api/helpers";
 
 export async function GET() {
-  const supabase = await createClient();
-  const { data: { user }, error } = await supabase.auth.getUser();
-  if (error || !user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const { supabase, user, error } = await requireAuth();
+  if (error) return error;
 
   const { data: matches } = await supabase
     .from("matches")
