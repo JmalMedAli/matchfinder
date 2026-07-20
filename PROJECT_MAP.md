@@ -30,7 +30,7 @@ src/
 │   │       ├── layout.tsx                              # staff gate (admin OR moderator)
 │   │       ├── settings/layout.tsx, notifications/layout.tsx  # nested full-admin-only gates
 │   └── api/                                           # route files — see API table
-├── components/          # ~60 feature components + components/ui/ (16 shadcn primitives) + components/admin/, block-button.tsx
+├── components/          # ~60 feature components + components/ui/ (17 shadcn primitives incl. scroll-area) + components/admin/, block-button.tsx
 ├── hooks/               # 28 domain hooks (use-matches, use-messages, use-blocks, use-push-notifications, use-realtime…)
 ├── lib/                 # supabase/{client,server,middleware}, notify, email, push/send, geo, rate-limit (durable, RPC-backed), logger, utils, api/{helpers,admin}
 ├── stores/ui-store.ts   # Zustand (sidebar state only)
@@ -66,7 +66,7 @@ public/sw.js             # push service worker
 - **admin_audit_log** — every staff mutation to `profiles`/`matches`/`football_fields`/`reports`/`reviews`/`match_reviews`/`field_reviews`/`broadcast_notifications`/`app_settings`, recorded automatically by a `SECURITY DEFINER` trigger (`log_staff_change`) from the actual committed old/new row data — **no app code and no client session can write an entry**, including staff's own browser (no INSERT policy exists for any client role). `ip_address`/`user_agent`/`reason` columns exist but are unpopulated (tracked in technical-debt.md). Staff-readable via `GET /api/admin/audit`.
 - **rate_limit_buckets / rate_limit_policies** — durable, per-user rate limiting (replaces the old in-memory implementation, which reset on every serverless cold start). `check_rate_limit(scope)` derives the bucket key from `auth.uid()` and looks up the threshold from `rate_limit_policies` — both are server-side, never caller-supplied, so a direct RPC call can only affect the caller's own bucket at the real configured limit.
 - **match_templates, match_photos, match_availability, match_checkins, activity_feed, message_reactions, push_subscriptions, push_delivery_log** — backfilled from live schema 2026-07-20 (`migration-schema-drift-backfill.sql`); see each table's RLS for real behavior. `push_delivery_log`'s two "service role" policies are actually permissive-for-any-authenticated-session (see technical-debt.md).
-- **Functions/triggers:** `handle_new_user`, `update_updated_at`, `accept_join_request` / `remove_accepted_player` (atomic capacity; both now verify `auth.uid() = p_organizer_id` and are `authenticated`-only — previously callable by `anon` with no identity check at all, see technical-debt.md Resolved), `create_notification`, `get_or_create_dm` (verifies caller identity + refuses a blocked pair), `get_unread_counts`, `sync_player_avg_rating` (DELETE-safe), `sync_field_rating`, chat-membership triggers, `is_admin()`, `is_staff()`, `is_conversation_participant()`, `is_dm_blocked()`, `prevent_self_role_escalation` (role: admin-only; status: staff), `log_staff_change` (audit trigger), `check_rate_limit()`, `cleanup_rate_limit_buckets()`, `admin_growth_series`, `admin_popular_cities`, `admin_top_organizers`, `admin_dispatch_scheduled_broadcasts`
+- **Functions/triggers:** `handle_new_user`, `update_updated_at`, `accept_join_request` / `remove_accepted_player` (atomic capacity; both now verify `auth.uid() = p_organizer_id` and are `authenticated`-only — previously callable by `anon` with no identity check at all, see technical-debt.md Resolved), `admin_set_join_request_status` (staff-gated equivalent of the two above, for managing join requests on matches staff doesn't organize — checks `is_staff()` internally, same capacity/reopen guarantees), `create_notification`, `get_or_create_dm` (verifies caller identity + refuses a blocked pair), `get_unread_counts`, `sync_player_avg_rating` (DELETE-safe), `sync_field_rating`, chat-membership triggers, `is_admin()`, `is_staff()`, `is_conversation_participant()`, `is_dm_blocked()`, `prevent_self_role_escalation` (role: admin-only; status: staff), `log_staff_change` (audit trigger), `check_rate_limit()`, `cleanup_rate_limit_buckets()`, `admin_growth_series`, `admin_popular_cities`, `admin_top_organizers`, `admin_dispatch_scheduled_broadcasts`
 
 ## Pages
 | Path | Purpose | Auth |
@@ -83,7 +83,7 @@ public/sw.js             # push service worker
 | `/dashboard/conversations` (+`/[id]`) | Chat list + thread (DMs, group, reactions, typing, block/unblock in DM header) | Yes |
 | `/dashboard/notifications` | Notification list, mark read, preferences | Yes |
 | `/dashboard/profile` (+`/edit`) | Profile hub + edit (avatar, privacy toggles) | Yes |
-| `/dashboard/admin` (+`/users`, `/users/[id]`, `/matches`, `/fields`, `/reports`, `/reviews`, `/analytics`, `/audit`) | Admin panel, staff-accessible sections. Gated by `src/app/dashboard/admin/layout.tsx` (`profiles.role` in `admin`/`moderator`, admin additionally requires `user.id === ADMIN_USER_ID`) | Staff |
+| `/dashboard/admin` (+`/users`, `/users/[id]`, `/matches`, `/matches/[id]/edit`, `/fields`, `/reports`, `/reviews`, `/analytics`, `/audit`) | Admin panel, staff-accessible sections. Gated by `src/app/dashboard/admin/layout.tsx` (`profiles.role` in `admin`/`moderator`, admin additionally requires `user.id === ADMIN_USER_ID`). `/matches/[id]/edit` is a single-page editor covering every field the player create/edit flow does, plus a status override (including reopening a CLOSED/COMPLETED/ARCHIVED match) and full join-request management (accept/reject/remove/reset), independent of who organizes the match | Staff |
 | `/dashboard/admin/notifications`, `/dashboard/admin/settings` | Full-admin-only sections — each has its own nested `layout.tsx` redirecting moderators back to `/dashboard/admin` | Admin only |
 
 ## API Endpoints
@@ -92,16 +92,16 @@ public/sw.js             # push service worker
 | Matches | `GET/POST /api/matches` · `GET/PATCH/DELETE /api/matches/[id]` · `GET /api/matches/featured` · `GET /api/matches/calendar` |
 | Post-match | `/api/matches/[id]/checkin` · `/awards` · `/stats` · `/post-review` |
 | Join requests | `POST /api/join-requests` · `PATCH/DELETE /api/join-requests/[id]` · `GET …/mine` · `GET …/incoming` |
-| Notifications | `GET /api/notifications` · `PATCH …/read` · `…/remind` |
+| Notifications | `GET/DELETE /api/notifications` · `PATCH …/read` · `…/remind` |
 | Push | `POST /api/push/subscribe` · `…/unsubscribe` · `GET …/vapid-key` |
-| Chat | `GET/POST /api/conversations` · `PATCH …/[id]/read` · `GET/POST /api/messages` · `…/[id]/reactions` |
+| Chat | `GET/POST/DELETE /api/conversations` (DELETE removes the caller's own participation only) · `PATCH …/[id]/read` · `GET/POST /api/messages` · `…/[id]/reactions` |
 | Fields | `GET /api/fields` · `GET /api/fields/[id]` |
 | Players | `GET /api/players/search` · `GET /api/players/[id]/stats` |
 | Community | `/api/reviews` · `/api/favorites` · `/api/leaderboard` · `/api/achievements` · `/api/activity` |
 | Blocking | `GET/POST /api/blocks` (toggle) — see technical-debt.md re: DB-layer enforcement points |
 | Tools | `/api/match-templates` (+`[id]`) · `/api/match-availability` · `/api/match-photos` |
 | Reporting | `POST /api/reports` (player-facing) |
-| Admin — staff-accessible (`requireStaff()`, `src/lib/api/admin.ts`) | `GET /api/admin/stats` · `GET /api/admin/me` · `GET /api/admin/users` (+`[id]` GET, status-only PATCH) · `GET /api/admin/matches` (+`[id]` PATCH/DELETE) · `GET/POST /api/admin/fields` (+`[id]` GET/PATCH/DELETE) · `GET /api/admin/reports` (+`[id]` PATCH) · `GET /api/admin/reviews` (+`[id]` DELETE, `?type=`) · `GET /api/admin/analytics` · `GET /api/admin/audit` (read-only; entries are trigger-written, no matching write route exists) |
+| Admin — staff-accessible (`requireStaff()`, `src/lib/api/admin.ts`) | `GET /api/admin/stats` · `GET /api/admin/me` · `GET /api/admin/users` (+`[id]` GET, status-only PATCH) · `GET /api/admin/matches` (+`[id]` GET/PATCH/DELETE, full field set incl. field/position/price, `action: cancel\|force-complete\|reopen`) · `PATCH /api/admin/matches/[id]/join-requests/[requestId]` (accept/reject/reset any request, independent of organizer) · `GET/POST /api/admin/fields` (+`[id]` GET/PATCH/DELETE) · `GET /api/admin/reports` (+`[id]` PATCH) · `GET /api/admin/reviews` (+`[id]` DELETE, `?type=`) · `GET /api/admin/analytics` · `GET /api/admin/audit` (read-only; entries are trigger-written, no matching write route exists) |
 | Admin — full-admin-only (`requireAdmin()`) | `[id]` PATCH's `role` field on `/api/admin/users` · `DELETE /api/admin/users/[id]` · `GET/POST /api/admin/notifications/broadcast` · `GET/PATCH /api/admin/settings` |
 | System | `GET /api/cron/match-reminder` · `GET /api/cron/broadcast-dispatch` — both now require `Authorization: Bearer $CRON_SECRET` |
 
@@ -112,9 +112,9 @@ Route conventions (auth → UUID validation → JSON error shape) are defined in
 - **Matches:** CRUD with field selector, price-per-person (informational), position-needed, past-date validation; templates; featured matches; archive/delete; bulk actions; share via WhatsApp/SMS/copy/QR
 - **Join lifecycle:** request → accept/reject (atomic capacity) → withdraw → re-request; waitlist with auto-promote; organizer can remove players; refused between a blocked pair
 - **Discovery:** nearby (geolocation + Haversine, distance pills, city fallback), fields directory with map view + popular fields, home calendar with day detail sheet
-- **Chat:** DMs + auto-managed per-match group chats, reactions, typing indicator, unread counts, realtime, block/unblock in the DM header
+- **Chat:** DMs + auto-managed per-match group chats, reactions, typing indicator, unread counts, realtime, block/unblock in the DM header; select-one/select-all + delete on the conversations list (removes the caller's own participation only — the other side keeps their copy, see technical-debt.md/migration-conversation-notification-delete.sql for why)
 - **Trust & safety:** player-filed reports (user/match/review/field) feeding the staff Reports queue; block/mute between players, enforced at the database layer (DM creation, message send, join requests all refuse a blocked pair — not just hidden in the UI)
-- **Notifications:** in-app realtime (toast + badge) + web push (service worker, subscription mgmt, preferences) + email (Resend); match reminders (client hook + cron route, now secret-gated); MOTM/fair-play award + achievement unlock (in-app + push only, no email — `skipEmail: true`, per notification-restraint principle); admin broadcast announcements (immediate or scheduled)
+- **Notifications:** in-app realtime (toast + badge) + web push (service worker, subscription mgmt, preferences) + email (Resend); match reminders (client hook + cron route, now secret-gated); MOTM/fair-play award + achievement unlock (in-app + push only, no email — `skipEmail: true`, per notification-restraint principle); admin broadcast announcements (immediate or scheduled); mark-all-read; select-one/select-all + delete (real delete — notifications are single-owner rows, unlike conversations)
 - **Post-match:** check-in, own-match review (overall rating + field rating + comment, `match_reviews`/`field_reviews`), peer player ratings (`reviews` — players can never rate themselves, enforced by a DB constraint), goals scored, MOTM + fair-play awards (no self-voting), achievements, leaderboard, photo gallery
 - **Community:** activity feed, leaderboard, public profiles, sharing
 - **Onboarding:** dismissible nudge on dashboard home prompting missing position/city (`src/components/onboarding-nudge.tsx`), not a gate
@@ -125,7 +125,7 @@ Route conventions (auth → UUID validation → JSON error shape) are defined in
 `useRealtimeChannel` (core lifecycle hook) → subscriptions on `notifications` (INSERT → toast/badge), `join_requests` (per match), `messages` (per conversation), typing broadcast. All events **invalidate TanStack Query keys** — never mutate caches directly.
 
 ## Testing & CI
-`tests/**` — Vitest, run with `npm test`. Real integration tests against production Postgres via a direct pooler connection (no Supabase branch/local Docker stack available in this project's dev environment), isolated per-test via a throwaway `auth.users` row + `BEGIN...ROLLBACK` (`tests/helpers/`), with `SET ROLE authenticated` so RLS is actually enforced rather than bypassed. Covers `accept_join_request`/`remove_accepted_player` capacity + identity checks, `join_requests` RLS, `prevent_self_role_escalation`, `check_rate_limit`, chat RLS (recursion regression guard), and block enforcement. Needs `SUPABASE_TEST_DB_URL` in a local `.env.test` (gitignored) or as a GitHub Actions secret.
+`tests/**` — Vitest, run with `npm test`. Real integration tests against production Postgres via a direct pooler connection (no Supabase branch/local Docker stack available in this project's dev environment), isolated per-test via a throwaway `auth.users` row + `BEGIN...ROLLBACK` (`tests/helpers/`), with `SET ROLE authenticated` so RLS is actually enforced rather than bypassed. Covers `accept_join_request`/`remove_accepted_player` capacity + identity checks, `admin_set_join_request_status`, `join_requests` RLS, `prevent_self_role_escalation`, `check_rate_limit`, chat RLS (recursion regression guard), and block enforcement. Needs `SUPABASE_TEST_DB_URL` in a local `.env.test` (gitignored) or as a GitHub Actions secret.
 
 `.github/workflows/ci.yml` — typecheck + build + tests on push/PR; lint runs `continue-on-error` until the pre-existing lint debt (`docs/technical-debt.md`) is cleared.
 
@@ -143,7 +143,7 @@ CRON_SECRET=                     # shared secret required as `Authorization: Bea
 ```
 
 ## Setup
-1. Create a Supabase project; run, in order: `supabase/migration.sql`, `-v3`, `-v4`, `-v5`, `migration-admin-panel.sql`, `migration-admin-analytics.sql`, `migration-admin-top-organizers.sql`, `migration-admin-broadcast-dispatch.sql`, `migration-security-hardening.sql`, `migration-blocking-and-chat-rls-fix.sql`, `migration-schema-drift-backfill.sql`, `migration-join-request-identity-fix.sql`.
+1. Create a Supabase project; run, in order: `supabase/migration.sql`, `-v3`, `-v4`, `-v5`, `migration-admin-panel.sql`, `migration-admin-analytics.sql`, `migration-admin-top-organizers.sql`, `migration-admin-broadcast-dispatch.sql`, `migration-security-hardening.sql`, `migration-blocking-and-chat-rls-fix.sql`, `migration-schema-drift-backfill.sql`, `migration-join-request-identity-fix.sql`, `migration-conversation-notification-delete.sql`, `migration-admin-join-request-management.sql`.
    This now produces the full production schema (last drift items backfilled 2026-07-20).
 2. Enable providers: Google OAuth, Phone OTP (Authentication → Providers).
 3. Enable Realtime on: `notifications`, `join_requests`, `matches`, `messages`, `conversation_participants`.

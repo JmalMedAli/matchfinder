@@ -7,6 +7,7 @@ import { useTypingIndicator } from "@/hooks/use-typing-indicator";
 import { MessageBubble } from "@/components/message-bubble";
 import { MessageInput } from "@/components/message-input";
 import { TypingIndicator } from "@/components/typing-indicator";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { createClient } from "@/lib/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import type { Message } from "@/types/chat";
@@ -110,38 +111,37 @@ export function ChatView({ conversationId }: ChatViewProps) {
 
   return (
     <div className="flex flex-col h-[calc(100dvh-8rem)] md:h-[calc(100vh-3rem)]">
-      <div
-        ref={containerRef}
-        className="flex-1 overflow-y-auto px-4 py-3 space-y-2.5"
-      >
-        {hasNextPage && (
-          <button
-            onClick={handleLoadOlder}
-            disabled={isFetchingNextPage}
-            className="mx-auto block text-xs text-muted-foreground/60 hover:text-foreground transition-colors py-2 active:scale-95"
-          >
-            {isFetchingNextPage ? (
-              <span className="flex items-center gap-1.5">
-                <span className="h-3 w-3 animate-spin rounded-full border border-primary border-t-transparent" />
-                Loading...
-              </span>
-            ) : (
-              "Load older messages"
-            )}
-          </button>
-        )}
+      <ScrollArea ref={containerRef} className="flex-1 min-h-0">
+        <div className="px-4 py-3 space-y-2.5">
+          {hasNextPage && (
+            <button
+              onClick={handleLoadOlder}
+              disabled={isFetchingNextPage}
+              className="mx-auto block text-xs text-muted-foreground/60 hover:text-foreground transition-colors py-2 active:scale-95"
+            >
+              {isFetchingNextPage ? (
+                <span className="flex items-center gap-1.5">
+                  <span className="h-3 w-3 animate-spin rounded-full border border-primary border-t-transparent" />
+                  Loading...
+                </span>
+              ) : (
+                "Load older messages"
+              )}
+            </button>
+          )}
 
-        {allMessages.map((msg) => (
-          <MessageBubble
-            key={msg.id}
-            message={msg}
-            isOwn={msg.sender_id === userId}
-          />
-        ))}
+          {allMessages.map((msg) => (
+            <MessageBubble
+              key={msg.id}
+              message={msg}
+              isOwn={msg.sender_id === userId}
+            />
+          ))}
 
-        <TypingIndicator users={typingUsers} />
-        <div ref={bottomRef} />
-      </div>
+          <TypingIndicator users={typingUsers} />
+          <div ref={bottomRef} />
+        </div>
+      </ScrollArea>
 
       <MessageInput
         onSend={handleSend}

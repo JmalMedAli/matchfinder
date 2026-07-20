@@ -3,24 +3,22 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { Home, MapPin, Plus, User, MessageCircle, Search, Bell } from "lucide-react";
+import { Home, Plus, User, MessageCircle, Search, List } from "lucide-react";
 import { motion } from "framer-motion";
 import { useUnreadCounts } from "@/hooks/use-unread-count";
-import { useNotificationCount } from "@/hooks/use-notification-count";
 
 const tabs = [
   { href: "/dashboard", label: "Home", icon: Home },
   { href: "/dashboard/fields", label: "Fields", icon: Search },
   { href: "/dashboard/matches/new", label: "Create", icon: Plus, isCreate: true },
   { href: "/dashboard/conversations", label: "Chats", icon: MessageCircle },
-  { href: "/dashboard/notifications", label: "Alerts", icon: Bell },
+  { href: "/dashboard/my-matches", label: "Matches", icon: List },
   { href: "/dashboard/profile", label: "Profile", icon: User },
 ];
 
 export function BottomNav() {
   const pathname = usePathname();
   const { data: unreadData } = useUnreadCounts();
-  const { data: notifCount } = useNotificationCount();
   const chatUnread = unreadData?.reduce((sum, c) => sum + Number(c.unread_count), 0) ?? 0;
 
   return (
@@ -36,9 +34,7 @@ export function BottomNav() {
               ? pathname === "/dashboard"
               : pathname.startsWith(item.href);
           const isChats = item.href === "/dashboard/conversations";
-          const isNotifs = item.href === "/dashboard/notifications";
           const showChatBadge = isChats && chatUnread > 0;
-          const showNotifBadge = isNotifs && (notifCount ?? 0) > 0;
 
           if (item.isCreate) {
             return (
@@ -83,11 +79,6 @@ export function BottomNav() {
                 {showChatBadge && (
                   <span className="absolute -top-1.5 -right-2.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[9px] font-bold text-primary-foreground">
                     {chatUnread > 99 ? "99+" : chatUnread}
-                  </span>
-                )}
-                {showNotifBadge && (
-                  <span className="absolute -top-1.5 -right-2.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[9px] font-bold text-primary-foreground">
-                    {(notifCount ?? 0) > 99 ? "99+" : notifCount}
                   </span>
                 )}
               </motion.div>

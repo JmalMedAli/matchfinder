@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireStaff } from "@/lib/api/admin";
-import { UUID_RE, jsonError, parseJsonBody } from "@/lib/api/helpers";
+import { UUID_RE, PROFILE_SELECT, jsonError, parseJsonBody } from "@/lib/api/helpers";
 import { rateLimit } from "@/lib/rate-limit";
 import { notifyUsers } from "@/lib/notify";
 
@@ -16,9 +16,38 @@ interface MatchPatchBody {
   title?: string;
   description?: string;
   date?: string;
-  max_players?: number;
+  maxPlayers?: number;
+  footballFieldId?: string | null;
+  positionNeeded?: string | null;
+  pricePerPerson?: number | null;
   status?: string;
-  action?: "cancel" | "force-complete";
+  action?: "cancel" | "force-complete" | "reopen";
+}
+
+export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  if (!UUID_RE.test(id)) return jsonError("Invalid id");
+
+  const { supabase, error } = await requireStaff();
+  if (error) return error;
+
+  const { data: match, error: matchError } = await supabase
+    .from("matches")
+    .select(`*, profiles!organizer_id(${PROFILE_SELECT}), football_fields(id, name, city)`)
+    .eq("id", id)
+    .single();
+
+  if (matchError || !match) return jsonError("Match not found", 404);
+
+  const { data: joinRequests, error: jrError } = await supabase
+    .from("join_requests")
+    .select(`id, status, created_at, player_id, profiles!player_id(${PROFILE_SELECT})`)
+    .eq("match_id", id)
+    .order("created_at", { ascending: true });
+
+  if (jrError) return jsonError(jrError.message, 500);
+
+  return NextResponse.json({ ...match, join_requests: joinRequests ?? [] });
 }
 
 async function notifyParticipants(
@@ -53,17 +82,31 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   const { body, error: bodyError } = await parseJsonBody<MatchPatchBody>(req);
   if (bodyError) return bodyError;
 
-  const updates: Record<string, string | number> = {};
+  const updates: Record<string, string | number | null> = {};
 
   if (body.action === "cancel") {
     updates.status = "ARCHIVED";
   } else if (body.action === "force-complete") {
     updates.status = "COMPLETED";
+  } else if (body.action === "reopen") {
+    updates.status = "OPEN";
   } else {
     if (body.title !== undefined) updates.title = body.title;
     if (body.description !== undefined) updates.description = body.description;
     if (body.date !== undefined) updates.date = body.date;
-    if (body.max_players !== undefined) updates.max_players = body.max_players;
+    if (body.maxPlayers !== undefined) {
+      if (typeof body.maxPlayers !== "number" || body.maxPlayers < 2 || body.maxPlayers > 100) {
+        return jsonError("Max players must be between 2 and 100");
+      }
+      updates.max_players = body.maxPlayers;
+    }
+    if (body.footballFieldId !== undefined) {
+      updates.football_field_id = body.footballFieldId && UUID_RE.test(body.footballFieldId) ? body.footballFieldId : null;
+    }
+    if (body.positionNeeded !== undefined) updates.position_needed = body.positionNeeded;
+    if (body.pricePerPerson !== undefined) {
+      updates.price_per_person = body.pricePerPerson && body.pricePerPerson > 0 ? body.pricePerPerson : null;
+    }
     if (body.status !== undefined) {
       if (!STATUSES.includes(body.status as (typeof STATUSES)[number])) return jsonError("Invalid status");
       updates.status = body.status;
@@ -94,6 +137,13 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       id,
       "Match marked complete",
       `"${data.title}" was marked completed by an administrator. You can now leave a review.`,
+    );
+  } else if (body.action === "reopen") {
+    await notifyParticipants(
+      supabase,
+      id,
+      "Match reopened",
+      `"${data.title}" was reopened by an administrator and is accepting players again.`,
     );
   }
 

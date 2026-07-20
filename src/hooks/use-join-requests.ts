@@ -110,10 +110,11 @@ export function useRemoveAcceptedPlayer() {
   });
 }
 
-export function useJoinRequests() {
+export function useJoinRequests(options: { enabled?: boolean } = {}) {
   return useQuery({
     queryKey: ["join-requests", "mine"],
     queryFn: fetchMyJoinRequests,
+    enabled: options.enabled,
   });
 }
 

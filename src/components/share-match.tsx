@@ -81,14 +81,14 @@ export function ShareMatch({ title, date, location, matchId }: ShareMatchProps) 
         {open && (
           <>
             <motion.div
-              className="fixed inset-0 z-50 bg-black/40"
+              className="fixed inset-0 z-[60] bg-black/40"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setOpen(false)}
             />
             <motion.div
-              className="fixed bottom-0 left-0 right-0 z-50 bg-background rounded-t-3xl border-t px-4 pb-8 pt-3"
+              className="fixed bottom-0 left-0 right-0 z-[70] bg-background rounded-t-3xl border-t px-4 pb-8 pt-3"
               initial={{ y: "100%" }}
               animate={{ y: 0 }}
               exit={{ y: "100%" }}

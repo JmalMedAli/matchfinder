@@ -7,6 +7,7 @@ export async function GET(req: NextRequest) {
 
   const { searchParams } = new URL(req.url);
   const status = searchParams.get("status");
+  const organizerId = searchParams.get("organizerId");
   const page = Math.max(1, parseInt(searchParams.get("page") ?? "1", 10));
   const pageSize = Math.min(50, Math.max(1, parseInt(searchParams.get("pageSize") ?? "12", 10)));
   const search = searchParams.get("search") ?? undefined;
@@ -19,6 +20,9 @@ export async function GET(req: NextRequest) {
 
   if (status && ["OPEN", "FULL", "CLOSED", "COMPLETED", "ARCHIVED"].includes(status)) {
     query = query.eq("status", status);
+  }
+  if (organizerId && UUID_RE.test(organizerId)) {
+    query = query.eq("organizer_id", organizerId);
   }
   if (search) {
     // Strip characters that are structurally significant to a PostgREST

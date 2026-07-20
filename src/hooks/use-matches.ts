@@ -75,6 +75,7 @@ interface MatchFilters {
   search?: string;
   page?: number;
   pageSize?: number;
+  organizerId?: string;
 }
 
 async function fetchMatches(filters: MatchFilters = {}): Promise<MatchesResponse> {
@@ -83,6 +84,7 @@ async function fetchMatches(filters: MatchFilters = {}): Promise<MatchesResponse
   if (filters.search) params.set("search", filters.search);
   if (filters.page) params.set("page", String(filters.page));
   if (filters.pageSize) params.set("pageSize", String(filters.pageSize));
+  if (filters.organizerId) params.set("organizerId", filters.organizerId);
 
   const res = await fetch(`/api/matches?${params.toString()}`);
   if (!res.ok) throw new Error("Failed to fetch matches");
@@ -151,10 +153,11 @@ async function deleteMatch(id: string): Promise<void> {
   }
 }
 
-export function useMatches(filters: MatchFilters = {}) {
+export function useMatches(filters: MatchFilters = {}, options: { enabled?: boolean } = {}) {
   return useQuery({
     queryKey: ["matches", filters],
     queryFn: () => fetchMatches(filters),
+    enabled: options.enabled,
   });
 }
 

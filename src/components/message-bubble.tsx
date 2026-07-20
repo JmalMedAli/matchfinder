@@ -1,7 +1,16 @@
 "use client";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import { Copy, MoreHorizontal } from "lucide-react";
+import { toast } from "sonner";
 import type { Message } from "@/types/chat";
 
 function formatTime(dateStr: string) {
@@ -9,6 +18,37 @@ function formatTime(dateStr: string) {
     hour: "2-digit",
     minute: "2-digit",
   });
+}
+
+function MessageActions({ content }: { content: string }) {
+  function handleCopy() {
+    navigator.clipboard.writeText(content).then(
+      () => toast.success("Copied"),
+      () => toast.error("Couldn't copy"),
+    );
+  }
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        render={
+          <Button
+            aria-label="Message actions"
+            size="icon-xs"
+            variant="ghost"
+            className="opacity-0 transition-opacity group-hover:opacity-100"
+          />
+        }
+      >
+        <MoreHorizontal className="h-3.5 w-3.5" />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="center">
+        <DropdownMenuItem onClick={handleCopy}>
+          <Copy className="h-3.5 w-3.5" /> Copy
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
 }
 
 export function MessageBubble({
@@ -21,7 +61,7 @@ export function MessageBubble({
   return (
     <div
       className={cn(
-        "flex items-end gap-2 max-w-[85%]",
+        "group flex items-end gap-2 max-w-[85%]",
         isOwn ? "ml-auto flex-row-reverse" : "",
       )}
     >
@@ -42,22 +82,25 @@ export function MessageBubble({
         )}
         <div
           className={cn(
-            "rounded-2xl px-3.5 py-2 text-sm",
+            "rounded-md px-3.5 py-2 text-sm",
             isOwn
-              ? "bg-primary text-primary-foreground rounded-br-md"
-              : "bg-muted rounded-bl-md",
+              ? "bg-primary text-primary-foreground"
+              : "bg-muted text-foreground",
           )}
         >
           <p className="whitespace-pre-wrap break-words">{message.content}</p>
         </div>
-        <p
+        <div
           className={cn(
-            "text-[10px] text-muted-foreground mt-0.5",
-            isOwn ? "text-right mr-1" : "ml-1",
+            "flex items-center gap-1 mt-0.5",
+            isOwn ? "flex-row-reverse mr-1" : "ml-1",
           )}
         >
-          {formatTime(message.created_at)}
-        </p>
+          <p className="text-[10px] text-muted-foreground">
+            {formatTime(message.created_at)}
+          </p>
+          <MessageActions content={message.content} />
+        </div>
       </div>
     </div>
   );

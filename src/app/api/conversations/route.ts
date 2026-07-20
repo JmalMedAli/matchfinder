@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { jsonError, requireAuth, parseJsonBody } from "@/lib/api/helpers";
+import { UUID_RE, jsonError, requireAuth, parseJsonBody } from "@/lib/api/helpers";
+import { rateLimit } from "@/lib/rate-limit";
 
 const PROFILE_SELECT = "id, name, image";
 
@@ -110,4 +111,46 @@ export async function POST(req: NextRequest) {
   if (error) return jsonError(error.message, 500);
 
   return NextResponse.json({ conversation_id: result });
+}
+
+/**
+ * "Deletes" a conversation for the caller only — removes their own
+ * conversation_participants row (a leave/hide), never the conversation or
+ * messages themselves, since a conversation is shared with the other
+ * participant(s). Accepts `ids` (specific conversation ids) or omits it to
+ * leave every conversation the caller is in.
+ */
+export async function DELETE(req: NextRequest) {
+  const { supabase, user, error: authError } = await requireAuth();
+  if (authError) return authError;
+
+  if (!(await rateLimit(supabase, "delete-conversation"))) {
+    return jsonError("Too many requests", 429);
+  }
+
+  const { body, error: bodyError } = await parseJsonBody<{ ids?: unknown }>(req);
+  if (bodyError) return bodyError;
+
+  const { ids } = body;
+
+  if (ids !== undefined && ids !== null) {
+    if (!Array.isArray(ids)) return jsonError("ids must be an array");
+    const validIds = ids.filter((id): id is string => typeof id === "string" && UUID_RE.test(id));
+    if (validIds.length === 0) return jsonError("No valid conversation IDs provided");
+
+    const { error: deleteError } = await supabase
+      .from("conversation_participants")
+      .delete()
+      .in("conversation_id", validIds)
+      .eq("user_id", user.id);
+    if (deleteError) return jsonError(deleteError.message, 500);
+  } else {
+    const { error: deleteError } = await supabase
+      .from("conversation_participants")
+      .delete()
+      .eq("user_id", user.id);
+    if (deleteError) return jsonError(deleteError.message, 500);
+  }
+
+  return NextResponse.json({ success: true });
 }

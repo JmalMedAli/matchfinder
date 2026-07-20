@@ -59,16 +59,18 @@ export function DayDetailSheet({
     <>
       {/* Backdrop */}
       <motion.div
-        className="fixed inset-0 z-40 bg-black/40"
+        className="fixed inset-0 z-[60] bg-black/40"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         onClick={onClose}
       />
 
-      {/* Sheet */}
+      {/* Sheet — z-index must clear the fixed BottomNav (z-50), which sits
+          later in the DOM and would otherwise win ties and intercept clicks/
+          cover matches near the bottom of a tall (multi-match) list. */}
       <motion.div
-        className="fixed bottom-0 left-0 right-0 z-50 bg-background rounded-t-3xl max-h-[80vh] flex flex-col"
+        className="fixed bottom-0 left-0 right-0 z-[70] bg-background rounded-t-3xl max-h-[80vh] flex flex-col overflow-hidden"
         initial={{ y: "100%" }}
         animate={{ y: 0 }}
         exit={{ y: "100%" }}
@@ -102,8 +104,11 @@ export function DayDetailSheet({
           </div>
         </div>
 
-        {/* Content */}
-        <div className="flex-1 overflow-y-auto px-5 pb-8">
+        {/* Content — min-h-0 is required here: without it, a flex item's
+            default min-height:auto stops it from shrinking to enable its own
+            overflow-y-auto scrolling, so it just grows past the sheet's
+            max-h instead of scrolling (the actual "can't scroll" bug). */}
+        <div className="flex-1 overflow-y-auto min-h-0 px-5 pb-[calc(2rem+env(safe-area-inset-bottom))]">
           {isPending ? (
             <div className="space-y-3 py-4">
               {Array.from({ length: 3 }).map((_, i) => (

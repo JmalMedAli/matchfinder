@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
@@ -15,10 +14,7 @@ import {
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose,
-} from "@/components/ui/dialog";
-import { MoreHorizontal, Search, Calendar, Pencil, XCircle, CheckCircle2, Trash2 } from "lucide-react";
+import { MoreHorizontal, Search, Calendar, Pencil, XCircle, CheckCircle2, RotateCcw, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 interface AdminMatch {
@@ -49,9 +45,6 @@ export default function AdminMatchesPage() {
   const [statusFilter, setStatusFilter] = useState<(typeof STATUS_FILTERS)[number]>("all");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [editing, setEditing] = useState<AdminMatch | null>(null);
-  const [editTitle, setEditTitle] = useState("");
-  const [editMaxPlayers, setEditMaxPlayers] = useState(10);
   const pageSize = 20;
 
   function load() {
@@ -105,18 +98,6 @@ export default function AdminMatchesPage() {
     }
     toast.success("Match deleted");
     load();
-  }
-
-  function openEdit(m: AdminMatch) {
-    setEditing(m);
-    setEditTitle(m.title);
-    setEditMaxPlayers(m.max_players);
-  }
-
-  async function saveEdit() {
-    if (!editing) return;
-    const ok = await patchMatch(editing.id, { title: editTitle, max_players: editMaxPlayers });
-    if (ok) setEditing(null);
   }
 
   return (
@@ -191,9 +172,14 @@ export default function AdminMatchesPage() {
                         <MoreHorizontal className="h-4 w-4" />
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => openEdit(m)}>
+                        <DropdownMenuItem render={<Link href={`/dashboard/admin/matches/${m.id}/edit`} />}>
                           <Pencil className="h-4 w-4" /> Edit
                         </DropdownMenuItem>
+                        {(m.status === "CLOSED" || m.status === "COMPLETED" || m.status === "ARCHIVED") && (
+                          <DropdownMenuItem onClick={() => patchMatch(m.id, { action: "reopen" })}>
+                            <RotateCcw className="h-4 w-4" /> Reopen
+                          </DropdownMenuItem>
+                        )}
                         {m.status !== "COMPLETED" && (
                           <DropdownMenuItem onClick={() => patchMatch(m.id, { action: "force-complete" })}>
                             <CheckCircle2 className="h-4 w-4" /> Force complete
@@ -229,35 +215,6 @@ export default function AdminMatchesPage() {
           </div>
         </>
       )}
-
-      <Dialog open={!!editing} onOpenChange={(open) => !open && setEditing(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Edit match</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3">
-            <div className="space-y-1.5">
-              <Label htmlFor="edit-title">Title</Label>
-              <Input id="edit-title" value={editTitle} onChange={(e) => setEditTitle(e.target.value)} />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="edit-max">Max players</Label>
-              <Input
-                id="edit-max"
-                type="number"
-                min={2}
-                max={100}
-                value={editMaxPlayers}
-                onChange={(e) => setEditMaxPlayers(Number(e.target.value))}
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <DialogClose render={<Button variant="outline" />}>Cancel</DialogClose>
-            <Button onClick={saveEdit}>Save</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Users, MessageCircle } from "lucide-react";
 import type { Conversation } from "@/types/chat";
 
@@ -32,7 +33,19 @@ function getInitials(name: string | null) {
     .slice(0, 2);
 }
 
-export function ConversationList({ conversations }: { conversations: Conversation[] }) {
+interface ConversationListProps {
+  conversations: Conversation[];
+  selecting?: boolean;
+  selectedIds?: Set<string>;
+  onToggleSelect?: (id: string) => void;
+}
+
+export function ConversationList({
+  conversations,
+  selecting = false,
+  selectedIds,
+  onToggleSelect,
+}: ConversationListProps) {
   if (conversations.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center px-4">
@@ -59,12 +72,13 @@ export function ConversationList({ conversations }: { conversations: Conversatio
         const lastMsg = conv.last_message;
         const participantCount = conv.conversation_participants?.length ?? 0;
 
-        return (
-          <Link
-            key={conv.id}
-            href={`/dashboard/conversations/${conv.id}`}
-            className="flex items-center gap-3 px-4 py-3.5 active:bg-muted/50 transition-colors"
-          >
+        const isSelected = selectedIds?.has(conv.id) ?? false;
+        const rowClassName = "flex items-center gap-3 px-4 py-3.5 active:bg-muted/50 transition-colors";
+        const content = (
+          <>
+            {selecting && (
+              <Checkbox checked={isSelected} onCheckedChange={() => onToggleSelect?.(conv.id)} className="shrink-0" />
+            )}
             <Avatar className="h-11 w-11 shrink-0">
               <AvatarImage src={avatar ?? undefined} />
               <AvatarFallback className={isDM ? "" : "bg-primary/10 text-primary"}>
@@ -104,6 +118,21 @@ export function ConversationList({ conversations }: { conversations: Conversatio
                 </div>
               )}
             </div>
+          </>
+        );
+
+        return selecting ? (
+          <button
+            key={conv.id}
+            type="button"
+            onClick={() => onToggleSelect?.(conv.id)}
+            className={`w-full text-left ${rowClassName} ${isSelected ? "bg-primary/5" : ""}`}
+          >
+            {content}
+          </button>
+        ) : (
+          <Link key={conv.id} href={`/dashboard/conversations/${conv.id}`} className={rowClassName}>
+            {content}
           </Link>
         );
       })}

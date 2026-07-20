@@ -23,8 +23,8 @@ function getMenuSections(isAdmin: boolean) {
     {
       title: "Matches",
       items: [
-        { href: "/dashboard/my-matches", label: "My Matches", icon: List, description: "Matches you joined" },
-        { href: "/dashboard/my-matches", label: "Organizing", icon: Shield, description: "Matches you created" },
+        { href: "/dashboard/my-matches?section=joined", label: "My Matches", icon: List, description: "Matches you joined" },
+        { href: "/dashboard/my-matches?section=organizing", label: "Organizing", icon: Shield, description: "Matches you created" },
         { href: "/dashboard/archived", label: "Archived Matches", icon: Archive, description: "Hidden matches" },
         { href: "/dashboard/notifications", label: "Notifications", icon: Bell, description: "Alerts and updates" },
       ],

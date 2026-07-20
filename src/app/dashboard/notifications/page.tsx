@@ -1,12 +1,15 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useNotifications, useMarkNotificationsRead } from "@/hooks/use-notifications";
+import { useNotifications, useMarkNotificationsRead, useDeleteNotifications } from "@/hooks/use-notifications";
+import { SelectionToolbar } from "@/components/selection-toolbar";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Bell, CheckCheck, ChevronRight } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Bell, CheckCheck, ChevronRight, ListChecks } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { motion } from "framer-motion";
+import { toast } from "sonner";
 import type { Notification } from "@/hooks/use-notifications";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
@@ -28,6 +31,9 @@ export default function NotificationsPage() {
   const router = useRouter();
   const { data: notifications, isPending, error, refetch } = useNotifications();
   const markRead = useMarkNotificationsRead();
+  const deleteNotifications = useDeleteNotifications();
+  const [selecting, setSelecting] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   if (isPending) {
     return (
@@ -45,12 +51,18 @@ export default function NotificationsPage() {
 
   const unread = notifications?.filter((n) => !n.read) ?? [];
   const read = notifications?.filter((n) => n.read) ?? [];
+  const allIds = notifications?.map((n) => n.id) ?? [];
+  const allSelected = allIds.length > 0 && selectedIds.size === allIds.length;
 
   function handleMarkAllRead() {
     markRead.mutate(undefined);
   }
 
   function handleNotificationClick(n: Notification) {
+    if (selecting) {
+      toggleSelect(n.id);
+      return;
+    }
     if (!n.match_id) return;
     if (!n.read) {
       markRead.mutate([n.id], {
@@ -61,6 +73,72 @@ export default function NotificationsPage() {
     } else {
       router.push(`/dashboard/matches/${n.match_id}`);
     }
+  }
+
+  function toggleSelect(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleSelectAll() {
+    setSelectedIds(allSelected ? new Set() : new Set(allIds));
+  }
+
+  function exitSelecting() {
+    setSelecting(false);
+    setSelectedIds(new Set());
+  }
+
+  function handleDelete() {
+    const count = selectedIds.size;
+    if (!confirm(`Delete ${count} notification${count === 1 ? "" : "s"}? This can't be undone.`)) return;
+    deleteNotifications.mutate(Array.from(selectedIds), {
+      onSuccess: () => {
+        toast.success(`Deleted ${count} notification${count === 1 ? "" : "s"}`);
+        exitSelecting();
+      },
+      onError: (err) => toast.error(err.message),
+    });
+  }
+
+  function renderRow(n: Notification, variant: "unread" | "read") {
+    const isSelected = selectedIds.has(n.id);
+    const baseClass =
+      variant === "unread"
+        ? "bg-primary/5 border border-primary/15 active:bg-primary/10"
+        : "bg-card border hover:bg-muted/30";
+    return (
+      <button
+        type="button"
+        onClick={() => handleNotificationClick(n)}
+        className={`w-full text-left flex items-start gap-3 p-3.5 rounded-2xl transition-colors ${baseClass} ${
+          selecting ? "cursor-pointer" : n.match_id ? "cursor-pointer" : "cursor-default"
+        } ${isSelected ? "ring-2 ring-primary/40" : ""}`}
+      >
+        {selecting && (
+          <Checkbox
+            checked={isSelected}
+            onCheckedChange={() => toggleSelect(n.id)}
+            className="shrink-0 mt-0.5"
+          />
+        )}
+        {!selecting && variant === "unread" && (
+          <div className="h-2.5 w-2.5 rounded-full bg-primary mt-1.5 shrink-0" />
+        )}
+        <div className="flex-1 min-w-0">
+          <p className="font-medium text-sm leading-snug">{n.title}</p>
+          <p className="text-sm text-muted-foreground mt-0.5 line-clamp-2">{n.message}</p>
+          <p className="text-[11px] text-muted-foreground/60 mt-1.5">{new Date(n.created_at).toLocaleString()}</p>
+        </div>
+        {!selecting && n.match_id && (
+          <ChevronRight className="h-4 w-4 text-muted-foreground/30 shrink-0 mt-0.5" />
+        )}
+      </button>
+    );
   }
 
   return (
@@ -80,19 +158,44 @@ export default function NotificationsPage() {
             Notifications
           </h1>
         </div>
-        {unread.length > 0 && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleMarkAllRead}
-            disabled={markRead.isPending}
-            className="gap-1.5 text-primary h-8"
-          >
-            <CheckCheck className="h-3.5 w-3.5" />
-            Mark all read
-          </Button>
-        )}
+        <div className="flex items-center gap-1">
+          {!selecting && unread.length > 0 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleMarkAllRead}
+              disabled={markRead.isPending}
+              className="gap-1.5 text-primary h-8"
+            >
+              <CheckCheck className="h-3.5 w-3.5" />
+              Mark all read
+            </Button>
+          )}
+          {!selecting && allIds.length > 0 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 gap-1.5 text-muted-foreground"
+              onClick={() => setSelecting(true)}
+            >
+              <ListChecks className="h-3.5 w-3.5" />
+              Select
+            </Button>
+          )}
+        </div>
       </div>
+
+      {selecting && (
+        <SelectionToolbar
+          selectedCount={selectedIds.size}
+          totalCount={allIds.length}
+          allSelected={allSelected}
+          onToggleSelectAll={toggleSelectAll}
+          onDelete={handleDelete}
+          onCancel={exitSelecting}
+          deleting={deleteNotifications.isPending}
+        />
+      )}
 
       {/* ── Empty State ── */}
       {unread.length === 0 && read.length === 0 && (
@@ -109,30 +212,9 @@ export default function NotificationsPage() {
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.2, delay: i * 0.04 }}
-              whileTap={n.match_id ? { scale: 0.98 } : undefined}
+              whileTap={!selecting && n.match_id ? { scale: 0.98 } : undefined}
             >
-              <button
-                type="button"
-                onClick={() => handleNotificationClick(n)}
-                className={`w-full text-left flex items-start gap-3 p-3.5 bg-primary/5 border border-primary/15 rounded-2xl active:bg-primary/10 transition-colors ${
-                  n.match_id ? "cursor-pointer" : "cursor-default"
-                }`}
-              >
-                {/* Unread dot */}
-                <div className="h-2.5 w-2.5 rounded-full bg-primary mt-1.5 shrink-0" />
-
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-sm leading-snug">{n.title}</p>
-                  <p className="text-sm text-muted-foreground mt-0.5 line-clamp-2">{n.message}</p>
-                  <p className="text-[11px] text-muted-foreground/60 mt-1.5">
-                    {new Date(n.created_at).toLocaleString()}
-                  </p>
-                </div>
-
-                {n.match_id && (
-                  <ChevronRight className="h-4 w-4 text-muted-foreground/30 shrink-0 mt-0.5" />
-                )}
-              </button>
+              {renderRow(n, "unread")}
             </motion.div>
           ))}
         </section>
@@ -151,28 +233,8 @@ export default function NotificationsPage() {
           <section key={label} className="space-y-2">
             <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-1">{label}</h2>
             {items.map((n) => (
-              <motion.div
-                key={n.id}
-                whileTap={n.match_id ? { scale: 0.98 } : undefined}
-              >
-                <button
-                  type="button"
-                  onClick={() => handleNotificationClick(n)}
-                  className={`w-full text-left flex items-start gap-3 p-3.5 bg-card border rounded-2xl hover:bg-muted/30 transition-colors ${
-                    n.match_id ? "cursor-pointer" : "cursor-default"
-                  }`}
-                >
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-sm leading-snug">{n.title}</p>
-                    <p className="text-sm text-muted-foreground mt-0.5 line-clamp-2">{n.message}</p>
-                    <p className="text-[11px] text-muted-foreground/60 mt-1.5">
-                      {new Date(n.created_at).toLocaleString()}
-                    </p>
-                  </div>
-                  {n.match_id && (
-                    <ChevronRight className="h-4 w-4 text-muted-foreground/30 shrink-0 mt-0.5" />
-                  )}
-                </button>
+              <motion.div key={n.id} whileTap={!selecting && n.match_id ? { scale: 0.98 } : undefined}>
+                {renderRow(n, "read")}
               </motion.div>
             ))}
           </section>
