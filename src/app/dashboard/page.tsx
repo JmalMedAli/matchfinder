@@ -13,6 +13,7 @@ import { PlayerLeaderboard } from "@/components/player-leaderboard";
 import { ActivityFeed } from "@/components/activity-feed";
 import { PopularFields } from "@/components/popular-fields";
 import { FootballCalendar } from "@/components/football-calendar";
+import { OnboardingNudge } from "@/components/onboarding-nudge";
 import {
   Calendar, MapPin, Plus, Users, ChevronRight,
   Shield, Clock, CheckCircle, Hourglass, XCircle, Zap,
@@ -98,6 +99,9 @@ export default function DashboardPage() {
               </Avatar>
             </Link>
           </motion.div>
+
+          {/* ── Onboarding Nudge ── */}
+          <OnboardingNudge />
 
           {/* ── Quick Action Pills ── */}
           <motion.div

@@ -2,72 +2,100 @@
 
 import { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Users, Calendar, UserCheck, Star, TrendingUp, Clock } from "lucide-react";
+import { Users, Calendar, UserCheck, Star, TrendingUp, Flag, MapPin, CalendarCheck } from "lucide-react";
 import { motion } from "framer-motion";
+import { ErrorState } from "@/components/ui/error-state";
+import { ChartBar } from "@/components/admin/chart-bar";
+
+interface GrowthPoint {
+  week_start: string;
+  user_count: number;
+  match_count: number;
+}
+
+interface PopularCity {
+  city: string;
+  user_count: number;
+}
+
+interface PopularField {
+  id: string;
+  name: string;
+  city: string;
+  rating: number;
+  review_count: number;
+}
 
 interface AdminStats {
   totalUsers: number;
+  activeUsers: number;
   totalMatches: number;
-  openMatches: number;
+  matchesToday: number;
   completedMatches: number;
-  totalJoinRequests: number;
-  pendingRequests: number;
-  acceptedRequests: number;
+  totalFields: number;
+  pendingReports: number;
   totalReviews: number;
+  growth: GrowthPoint[];
+  popularCities: PopularCity[];
+  popularFields: PopularField[];
 }
 
-export default function AdminPage() {
+export default function AdminOverviewPage() {
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetch("/api/admin/stats")
+  function fetchStats() {
+    return fetch("/api/admin/stats")
       .then((r) => {
-        if (!r.ok) throw new Error("Unauthorized");
+        if (!r.ok) throw new Error("Failed to load admin stats");
         return r.json();
       })
-      .then(setStats)
-      .catch((e) => setError(e.message))
+      .then((data) => setStats(data))
+      .catch(() => setErrorMsg("Failed to load admin stats."))
       .finally(() => setLoading(false));
-  }, []);
+  }
+
+  function retry() {
+    setLoading(true);
+    setErrorMsg(null);
+    fetchStats();
+  }
+
+  useEffect(() => { fetchStats(); }, []);
 
   if (loading) {
     return (
       <div className="space-y-6">
-        <Skeleton className="h-8 w-48" />
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {Array.from({ length: 8 }).map((_, i) => (
-            <Skeleton key={i} className="h-28 rounded-2xl" />
+            <Skeleton key={i} className="h-24 rounded-2xl" />
           ))}
         </div>
+        <Skeleton className="h-64 rounded-2xl" />
       </div>
     );
   }
 
-  if (error) {
-    return (
-      <div className="flex flex-col items-center py-16 text-center">
-        <p className="font-medium text-lg">Access Denied</p>
-        <p className="text-sm text-muted-foreground mt-1">You don&apos;t have admin access.</p>
-      </div>
-    );
+  if (errorMsg || !stats) {
+    return <ErrorState description={errorMsg ?? "Failed to load admin stats."} onRetry={retry} />;
   }
-
-  if (!stats) return null;
 
   const statCards = [
     { label: "Total Users", value: stats.totalUsers, icon: Users, color: "text-blue-500" },
-    { label: "Total Matches", value: stats.totalMatches, icon: Calendar, color: "text-primary" },
-    { label: "Open Matches", value: stats.openMatches, icon: TrendingUp, color: "text-green-500" },
-    { label: "Completed", value: stats.completedMatches, icon: Calendar, color: "text-muted-foreground" },
-    { label: "Join Requests", value: stats.totalJoinRequests, icon: UserCheck, color: "text-amber-500" },
-    { label: "Pending", value: stats.pendingRequests, icon: Clock, color: "text-orange-500" },
-    { label: "Accepted", value: stats.acceptedRequests, icon: UserCheck, color: "text-green-500" },
+    { label: "Active Users", value: stats.activeUsers, icon: UserCheck, color: "text-green-500" },
+    { label: "Matches Today", value: stats.matchesToday, icon: CalendarCheck, color: "text-primary" },
+    { label: "Completed Matches", value: stats.completedMatches, icon: Calendar, color: "text-muted-foreground" },
+    { label: "Pending Reports", value: stats.pendingReports, icon: Flag, color: "text-red-500" },
+    { label: "Football Fields", value: stats.totalFields, icon: MapPin, color: "text-amber-500" },
+    { label: "Total Matches", value: stats.totalMatches, icon: TrendingUp, color: "text-orange-500" },
     { label: "Reviews", value: stats.totalReviews, icon: Star, color: "text-amber-500" },
   ];
+
+  const weekLabels = stats.growth.map((g) =>
+    new Date(g.week_start).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+  );
 
   return (
     <motion.div
@@ -76,12 +104,7 @@ export default function AdminPage() {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
     >
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold font-[family-name:var(--font-barlow-condensed)]">
-          Admin Dashboard
-        </h1>
-        <Badge variant="secondary">Admin</Badge>
-      </div>
+      <h1 className="text-2xl font-bold font-[family-name:var(--font-barlow-condensed)]">Overview</h1>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {statCards.map((stat, i) => {
@@ -111,6 +134,65 @@ export default function AdminPage() {
             </motion.div>
           );
         })}
+      </div>
+
+      <div className="grid md:grid-cols-2 gap-4">
+        <Card>
+          <CardContent className="p-4">
+            <p className="font-semibold text-sm mb-3">Growth — last 8 weeks</p>
+            <ChartBar
+              categories={weekLabels}
+              series={[
+                { label: "New users", color: "chart-1" },
+                { label: "New matches", color: "chart-2" },
+              ]}
+              values={[
+                stats.growth.map((g) => g.user_count),
+                stats.growth.map((g) => g.match_count),
+              ]}
+            />
+          </CardContent>
+        </Card>
+
+        <div className="grid grid-rows-2 gap-4">
+          <Card>
+            <CardContent className="p-4">
+              <p className="font-semibold text-sm mb-3">Popular cities</p>
+              {stats.popularCities.length === 0 ? (
+                <p className="text-xs text-muted-foreground">No city data yet</p>
+              ) : (
+                <div className="space-y-2">
+                  {stats.popularCities.map((c) => (
+                    <div key={c.city} className="flex items-center justify-between text-sm">
+                      <span>{c.city}</span>
+                      <span className="text-muted-foreground">{c.user_count} players</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-4">
+              <p className="font-semibold text-sm mb-3">Popular fields</p>
+              {stats.popularFields.length === 0 ? (
+                <p className="text-xs text-muted-foreground">No field reviews yet</p>
+              ) : (
+                <div className="space-y-2">
+                  {stats.popularFields.map((f) => (
+                    <div key={f.id} className="flex items-center justify-between text-sm">
+                      <span className="truncate">{f.name}</span>
+                      <span className="text-muted-foreground shrink-0">
+                        {f.rating > 0 ? `${f.rating.toFixed(1)}★` : "—"} · {f.review_count}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </motion.div>
   );

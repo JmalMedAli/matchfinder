@@ -1,23 +1,23 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Star, Quote } from "lucide-react";
+import { Wallet, ShieldCheck, Timer } from "lucide-react";
 
-const testimonials = [
+const valueProps = [
   {
-    name: "Ahmed",
-    role: "Organizer",
-    text: "I used to WhatsApp 20 people to find enough players. Now I post a match and people come to me. Game changer.",
+    icon: Wallet,
+    title: "Always free",
+    text: "No booking fees, no subscriptions. Pay the field in cash like you always have — MatchFinder just gets the team together.",
   },
   {
-    name: "Youssef",
-    role: "Player",
-    text: "Just moved to the area and didn't know anyone. MatchFinder connected me with a regular Thursday game within a week.",
+    icon: ShieldCheck,
+    title: "Built on trust",
+    text: "Every match ends with ratings and reviews from the people who were actually there, so you know who you're playing with next time.",
   },
   {
-    name: "Karim",
-    role: "Regular",
-    text: "The nearby matches feature is perfect. I see what's within 5km, check the field, and join. Simple.",
+    icon: Timer,
+    title: "Find a game in minutes",
+    text: "Browse matches near you, check the field, and request to join. No group chats, no chasing people down.",
   },
 ];
 
@@ -33,7 +33,7 @@ export function SocialProof() {
             viewport={{ once: true }}
             transition={{ duration: 0.5 }}
           >
-            Loved by players
+            Why players choose MatchFinder
           </motion.h2>
           <motion.p
             className="mt-4 text-lg text-muted-foreground max-w-xl mx-auto"
@@ -42,14 +42,14 @@ export function SocialProof() {
             viewport={{ once: true }}
             transition={{ duration: 0.5, delay: 0.1 }}
           >
-            Join the growing community in Banlieue Sud Tunis
+            Built for the football community in Banlieue Sud Tunis
           </motion.p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {testimonials.map((t, i) => (
+          {valueProps.map((v, i) => (
             <motion.div
-              key={t.name}
+              key={v.title}
               className="rounded-2xl border bg-card p-6 relative"
               initial={{ opacity: 0, y: 30, scale: 0.95 }}
               whileInView={{ opacity: 1, y: 0, scale: 1 }}
@@ -57,25 +57,11 @@ export function SocialProof() {
               transition={{ duration: 0.5, delay: i * 0.1 }}
               whileHover={{ y: -6, scale: 1.02 }}
             >
-              <Quote className="h-8 w-8 text-primary/20 absolute top-6 right-6" />
-              <div className="flex gap-0.5 mb-4">
-                {Array.from({ length: 5 }).map((_, j) => (
-                  <motion.div
-                    key={j}
-                    initial={{ opacity: 0, scale: 0 }}
-                    whileInView={{ opacity: 1, scale: 1 }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 0.3, delay: i * 0.1 + j * 0.05 }}
-                  >
-                    <Star className="h-4 w-4 fill-primary text-primary" />
-                  </motion.div>
-                ))}
+              <div className="h-11 w-11 rounded-xl bg-primary/10 flex items-center justify-center mb-4">
+                <v.icon className="h-5 w-5 text-primary" />
               </div>
-              <p className="text-sm leading-relaxed mb-6">&ldquo;{t.text}&rdquo;</p>
-              <div>
-                <p className="font-semibold text-sm">{t.name}</p>
-                <p className="text-xs text-muted-foreground">{t.role}</p>
-              </div>
+              <p className="font-semibold mb-2">{v.title}</p>
+              <p className="text-sm leading-relaxed text-muted-foreground">{v.text}</p>
             </motion.div>
           ))}
         </div>

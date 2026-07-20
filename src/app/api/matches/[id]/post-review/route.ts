@@ -1,8 +1,29 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { requireAuth } from "@/lib/api/helpers";
+import { logger } from "@/lib/logger";
+import { notifyUser } from "@/lib/notify";
 
 export const dynamic = "force-dynamic";
+
+export async function GET(
+  _req: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  const { id } = await params;
+  const { supabase, user, error: authError } = await requireAuth();
+  if (authError) return authError;
+
+  const { data, error } = await supabase
+    .from("match_reviews")
+    .select("id, overall_rating, comment")
+    .eq("match_id", id)
+    .eq("reviewer_id", user.id)
+    .maybeSingle();
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  return NextResponse.json(data ?? null);
+}
 
 export async function POST(
   req: Request,
@@ -17,42 +38,64 @@ export async function POST(
     overallRating,
     organizerRating,
     fieldRating,
-    fairPlayRating,
     comment,
     goalsScored,
   } = body;
 
-  // Upsert review
-  const { error: reviewError } = await supabase
-    .from("reviews")
+  const { data: match } = await supabase
+    .from("matches")
+    .select("organizer_id, football_field_id")
+    .eq("id", id)
+    .single();
+
+  if (!match) {
+    return NextResponse.json({ error: "Match not found" }, { status: 404 });
+  }
+
+  // Own experience report for this match - never a rating of a player.
+  const { error: matchReviewError } = await supabase
+    .from("match_reviews")
     .upsert(
-      {
-        match_id: id,
-        reviewer_id: user.id,
-        player_id: user.id,
-        overall_rating: overallRating,
-        organizer_rating: organizerRating,
-        field_rating: fieldRating,
-        fair_play_rating: fairPlayRating,
-        comment: comment || null,
-        rating: overallRating,
-        goals_scored: goalsScored ?? 0,
-      },
-      { onConflict: "match_id,reviewer_id,player_id" },
+      { match_id: id, reviewer_id: user.id, overall_rating: overallRating, comment: comment || null },
+      { onConflict: "match_id,reviewer_id" },
     );
 
-  if (reviewError) {
-    return NextResponse.json({ error: reviewError.message }, { status: 500 });
+  if (matchReviewError) {
+    return NextResponse.json({ error: matchReviewError.message }, { status: 500 });
+  }
+
+  // Rate the organizer as a player - skipped entirely if you organized
+  // your own match, since players must never rate themselves.
+  if (organizerRating && match.organizer_id !== user.id) {
+    const { error } = await supabase
+      .from("reviews")
+      .upsert(
+        { match_id: id, reviewer_id: user.id, player_id: match.organizer_id, rating: organizerRating },
+        { onConflict: "match_id,reviewer_id,player_id" },
+      );
+    if (error) logger.warn("post-review: failed to record organizer rating", { matchId: id, error: error.message });
+  }
+
+  // Rate the field - not a player rating, feeds football_fields.rating.
+  if (fieldRating && match.football_field_id) {
+    const { error } = await supabase
+      .from("field_reviews")
+      .upsert(
+        { field_id: match.football_field_id, reviewer_id: user.id, rating: fieldRating, match_id: id },
+        { onConflict: "field_id,reviewer_id" },
+      );
+    if (error) logger.warn("post-review: failed to record field rating", { matchId: id, error: error.message });
   }
 
   // Upsert stats
   if (goalsScored && goalsScored > 0) {
-    await supabase
+    const { error } = await supabase
       .from("match_player_stats")
       .upsert(
         { match_id: id, player_id: user.id, goals_scored: goalsScored },
         { onConflict: "match_id,player_id" },
       );
+    if (error) logger.warn("post-review: failed to record match stats", { matchId: id, error: error.message });
 
     // Update profile goals
     const { data: profile } = await supabase.from("profiles").select("goals_scored").eq("id", user.id).single();
@@ -61,17 +104,8 @@ export async function POST(
     }
   }
 
-  // Update profile avg_rating
-  const { data: reviews } = await supabase
-    .from("reviews")
-    .select("overall_rating")
-    .eq("reviewer_id", user.id)
-    .not("overall_rating", "is", null);
-
-  if (reviews && reviews.length > 0) {
-    const avg = reviews.reduce((sum, r) => sum + (r.overall_rating ?? 0), 0) / reviews.length;
-    await supabase.from("profiles").update({ avg_rating: Math.round(avg * 10) / 10 }).eq("id", user.id);
-  }
+  // profiles.avg_rating is kept in sync by a database trigger on reviews
+  // (reviews received, not reviews given) - no app-side recalculation here.
 
   // Check achievements
   await checkAndUnlockAchievements(supabase, user.id);
@@ -108,14 +142,13 @@ async function checkAndUnlockAchievements(supabase: Awaited<ReturnType<typeof cr
     achievements.push({ type: "hat_trick", name: "Hat-Trick", condition: (hatTrick?.length ?? 0) > 0 });
   }
 
-  // Community Favorite (avg rating >= 4.5 with 5+ reviews)
+  // Community Favorite (avg rating >= 4.5 with 5+ reviews received)
   const { data: reviewData } = await supabase
     .from("reviews")
-    .select("overall_rating")
-    .eq("player_id", playerId)
-    .not("overall_rating", "is", null);
+    .select("rating")
+    .eq("player_id", playerId);
   if (reviewData && reviewData.length >= 5) {
-    const avg = reviewData.reduce((s, r) => s + (r.overall_rating ?? 0), 0) / reviewData.length;
+    const avg = reviewData.reduce((s, r) => s + r.rating, 0) / reviewData.length;
     achievements.push({ type: "community_favorite", name: "Community Favorite", condition: avg >= 4.5 });
   }
 
@@ -134,15 +167,31 @@ async function checkAndUnlockAchievements(supabase: Awaited<ReturnType<typeof cr
     achievements.push({ type: "top_organizer", name: "Top Organizer", condition: true });
   }
 
-  // Insert newly unlocked achievements
+  // Insert newly unlocked achievements - ignoreDuplicates so an already
+  // unlocked achievement isn't rewritten (and so we can tell it was new).
   for (const ach of achievements) {
     if (ach.condition) {
-      await supabase
+      const { data: inserted, error } = await supabase
         .from("player_achievements")
         .upsert(
           { player_id: playerId, achievement_type: ach.type, achievement_name: ach.name },
-          { onConflict: "player_id,achievement_type" },
-        );
+          { onConflict: "player_id,achievement_type", ignoreDuplicates: true },
+        )
+        .select();
+
+      if (error) {
+        logger.warn("post-review: failed to unlock achievement", { playerId, type: ach.type, error: error.message });
+        continue;
+      }
+
+      if (inserted && inserted.length > 0) {
+        await notifyUser({
+          userId: playerId,
+          title: "Achievement unlocked!",
+          message: `You unlocked "${ach.name}".`,
+          skipEmail: true,
+        });
+      }
     }
   }
 }

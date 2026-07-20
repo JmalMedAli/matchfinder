@@ -23,6 +23,7 @@ interface PostMatchReviewProps {
   organizerName: string;
   participants: Participant[];
   currentUserId: string;
+  isOrganizer: boolean;
   onComplete: () => void;
   onSkip: () => void;
 }
@@ -37,6 +38,7 @@ export function PostMatchReview({
   organizerName,
   participants,
   currentUserId,
+  isOrganizer,
   onComplete,
   onSkip,
 }: PostMatchReviewProps) {
@@ -44,33 +46,35 @@ export function PostMatchReview({
   const [overallRating, setOverallRating] = useState(0);
   const [organizerRating, setOrganizerRating] = useState(0);
   const [fieldRating, setFieldRating] = useState(0);
-  const [fairPlayRating, setFairPlayRating] = useState(0);
   const [comment, setComment] = useState("");
   const [motmVote, setMotmVote] = useState<string | null>(null);
   const [fairPlayVote, setFairPlayVote] = useState<string | null>(null);
   const [goalsScored, setGoalsScored] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const otherParticipants = participants.filter((p) => p.id !== currentUserId);
   const date = new Date(matchDate);
 
   async function handleSubmit() {
     setSubmitting(true);
+    setError(null);
     try {
-      // Submit review
-      await fetch(`/api/matches/${matchId}/post-review`, {
+      // Submit review - gates the success screen; everything after this
+      // is best-effort and shouldn't block it.
+      const res = await fetch(`/api/matches/${matchId}/post-review`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           overallRating,
-          organizerRating,
+          organizerRating: isOrganizer ? undefined : organizerRating,
           fieldRating,
-          fairPlayRating,
           comment: comment || undefined,
           goalsScored,
         }),
       });
+      if (!res.ok) throw new Error("Failed to submit review");
 
       // Submit awards
       if (motmVote) {
@@ -99,7 +103,7 @@ export function PostMatchReview({
 
       setSubmitted(true);
     } catch {
-      // Error handling
+      setError("Something went wrong submitting your review. Please try again.");
     } finally {
       setSubmitting(false);
     }
@@ -216,9 +220,10 @@ export function PostMatchReview({
 
               <div className="space-y-5">
                 <RatingRow label="Overall Match" rating={overallRating} onChange={setOverallRating} icon={<Star className="h-4 w-4" />} />
-                <RatingRow label="Organizer" rating={organizerRating} onChange={setOrganizerRating} icon={<Shield className="h-4 w-4" />} />
+                {!isOrganizer && (
+                  <RatingRow label="Organizer" rating={organizerRating} onChange={setOrganizerRating} icon={<Shield className="h-4 w-4" />} />
+                )}
                 {fieldName && <RatingRow label="Football Field" rating={fieldRating} onChange={setFieldRating} icon={<Zap className="h-4 w-4" />} />}
-                <RatingRow label="Fair Play" rating={fairPlayRating} onChange={setFairPlayRating} icon={<Trophy className="h-4 w-4" />} />
               </div>
             </motion.div>
           )}
@@ -339,6 +344,9 @@ export function PostMatchReview({
 
       {/* Bottom Actions */}
       <div className="shrink-0 px-4 py-4 border-t bg-background">
+        {error && (
+          <p className="text-sm text-destructive text-center mb-3">{error}</p>
+        )}
         <div className="flex gap-3">
           {step > 0 && (
             <Button

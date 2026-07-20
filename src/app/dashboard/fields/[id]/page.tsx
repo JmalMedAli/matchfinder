@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
+import { ReportDialog } from "@/components/admin/report-dialog";
 import {
   MapPin, Star, Phone, Share2, ExternalLink, ArrowLeft, Users,
   Calendar, Clock, ChevronRight, Building2, CloudSun, Fence,
@@ -16,8 +17,6 @@ import {
   Wifi, Accessibility, Wrench, CheckCircle, XCircle, ChevronDown, ChevronUp,
   Navigation, DollarSign
 } from "lucide-react";
-
-const AMENITY_MAP: Record<string, { icon: React.ComponentType<{ className?: string }>; label: string; enabled: boolean }> | null = null;
 
 function getAmenities(field: Record<string, unknown>) {
   const items: { icon: React.ComponentType<{ className?: string }>; label: string; enabled: boolean }[] = [
@@ -180,6 +179,7 @@ export default function FieldDetailPage({ params }: { params: Promise<{ id: stri
               )}
             </div>
           )}
+          <ReportDialog targetType="field" targetId={field.id} />
         </div>
       </motion.div>
 
@@ -222,7 +222,7 @@ export default function FieldDetailPage({ params }: { params: Promise<{ id: stri
       )}
 
       {/* Amenities */}
-      {enabledAmenities.length > 0 && (
+      {(enabledAmenities.length > 0 || disabledAmenities.length > 0) && (
         <motion.section
           className="mb-5"
           initial={{ opacity: 0, y: 8 }}
@@ -241,6 +241,17 @@ export default function FieldDetailPage({ params }: { params: Promise<{ id: stri
               </div>
             ))}
           </div>
+          {disabledAmenities.length > 0 && (
+            <div className="grid grid-cols-2 gap-2 mt-2">
+              {disabledAmenities.map((a) => (
+                <div key={a.label} className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 opacity-50">
+                  <a.icon className="h-4 w-4 text-muted-foreground shrink-0" />
+                  <span className="text-sm font-medium text-muted-foreground">{a.label}</span>
+                  <XCircle className="h-3.5 w-3.5 text-muted-foreground ml-auto shrink-0" />
+                </div>
+              ))}
+            </div>
+          )}
         </motion.section>
       )}
 

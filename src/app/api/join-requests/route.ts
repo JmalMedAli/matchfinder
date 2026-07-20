@@ -7,7 +7,7 @@ export async function POST(req: NextRequest) {
   const { supabase, user, error: authError } = await requireAuth();
   if (authError) return authError;
 
-  if (!rateLimit(`join-request:${user.id}`, { maxRequests: 5, windowMs: 60_000 })) {
+  if (!(await rateLimit(supabase, "join-request"))) {
     return jsonError("Too many requests. Try again in a minute.", 429);
   }
 

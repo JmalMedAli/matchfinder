@@ -8,6 +8,8 @@ import { Bell, CheckCheck, ChevronRight } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { motion } from "framer-motion";
 import type { Notification } from "@/hooks/use-notifications";
+import { EmptyState } from "@/components/ui/empty-state";
+import { ErrorState } from "@/components/ui/error-state";
 
 function timeGroup(dateStr: string): string {
   const d = new Date(dateStr);
@@ -24,17 +26,21 @@ function timeGroup(dateStr: string): string {
 
 export default function NotificationsPage() {
   const router = useRouter();
-  const { data: notifications, isPending } = useNotifications();
+  const { data: notifications, isPending, error, refetch } = useNotifications();
   const markRead = useMarkNotificationsRead();
 
   if (isPending) {
     return (
       <div className="space-y-3">
         {Array.from({ length: 4 }).map((_, i) => (
-          <Skeleton key={i} className="h-18 rounded-2xl" />
+          <Skeleton key={i} className="h-16 rounded-2xl" />
         ))}
       </div>
     );
+  }
+
+  if (error) {
+    return <ErrorState description="Failed to load notifications." onRetry={() => refetch()} />;
   }
 
   const unread = notifications?.filter((n) => !n.read) ?? [];
@@ -90,17 +96,7 @@ export default function NotificationsPage() {
 
       {/* ── Empty State ── */}
       {unread.length === 0 && read.length === 0 && (
-        <div className="flex flex-col items-center py-20 text-center">
-          <motion.div
-            className="h-16 w-16 rounded-2xl bg-muted flex items-center justify-center mb-4"
-            animate={{ rotate: [0, 8, -8, 0] }}
-            transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
-          >
-            <Bell className="h-8 w-8 text-muted-foreground/40" />
-          </motion.div>
-          <p className="font-medium">No notifications yet</p>
-          <p className="text-sm text-muted-foreground/60 mt-0.5">You&apos;ll see updates about your matches here.</p>
-        </div>
+        <EmptyState icon={Bell} title="No notifications yet" description="You'll see updates about your matches here." />
       )}
 
       {/* ── Unread ── */}

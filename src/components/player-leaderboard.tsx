@@ -26,7 +26,7 @@ const rankColors = ["bg-amber-400", "bg-gray-300", "bg-amber-600"];
 const rankIcons = ["🏆", "🥈", "🥉"];
 
 export function PlayerLeaderboard() {
-  const { data: players, isPending } = useQuery({
+  const { data: players, isPending, error, refetch } = useQuery({
     queryKey: ["leaderboard"],
     queryFn: fetchLeaderboard,
     staleTime: 60_000,
@@ -34,6 +34,15 @@ export function PlayerLeaderboard() {
 
   if (isPending) {
     return <div className="space-y-2">{Array.from({ length: 5 }).map((_, i) => <div key={i} className="h-16 rounded-2xl bg-muted animate-pulse" />)}</div>;
+  }
+
+  if (error) {
+    return (
+      <div className="text-center py-8">
+        <p className="text-sm text-muted-foreground">Couldn&apos;t load the leaderboard</p>
+        <button onClick={() => refetch()} className="text-xs text-primary font-medium mt-1">Try again</button>
+      </div>
+    );
   }
 
   if (!players?.length) return <p className="text-center text-sm text-muted-foreground py-8">No players yet</p>;

@@ -1,0 +1,37 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    env:
+      # Build-time only — these are the NEXT_PUBLIC_* client bundle values,
+      # not secrets. The app is fully client-rendered (no build-time data
+      # fetching), so placeholders are enough for lint/typecheck/build; only
+      # the test step needs a real, working connection (SUPABASE_TEST_DB_URL).
+      NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder-anon-key
+      SUPABASE_TEST_DB_URL: ${{ secrets.SUPABASE_TEST_DB_URL }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - run: npx tsc --noEmit
+
+      - name: Lint (non-blocking — 42 pre-existing errors predate this workflow, tracked in docs/technical-debt.md)
+        run: npx eslint src
+        continue-on-error: true
+
+      - run: npm run build
+
+      - run: npm test

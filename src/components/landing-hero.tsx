@@ -101,16 +101,6 @@ export function LandingHero() {
           >
             <div className="flex items-center gap-3">
               <div className="h-10 w-10 rounded-xl bg-white/10 backdrop-blur-sm flex items-center justify-center">
-                <Users className="h-5 w-5 text-white" />
-              </div>
-              <div>
-                <p className="text-xl font-bold text-white">200+</p>
-                <p className="text-white/50 text-xs">Players</p>
-              </div>
-            </div>
-            <div className="h-8 w-px bg-white/20" />
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-xl bg-white/10 backdrop-blur-sm flex items-center justify-center">
                 <MapPin className="h-5 w-5 text-white" />
               </div>
               <div>
@@ -121,11 +111,21 @@ export function LandingHero() {
             <div className="h-8 w-px bg-white/20" />
             <div className="flex items-center gap-3">
               <div className="h-10 w-10 rounded-xl bg-white/10 backdrop-blur-sm flex items-center justify-center">
+                <Users className="h-5 w-5 text-white" />
+              </div>
+              <div>
+                <p className="text-xl font-bold text-white">6</p>
+                <p className="text-white/50 text-xs">Cities</p>
+              </div>
+            </div>
+            <div className="h-8 w-px bg-white/20" />
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-xl bg-white/10 backdrop-blur-sm flex items-center justify-center">
                 <Zap className="h-5 w-5 text-white" />
               </div>
               <div>
-                <p className="text-xl font-bold text-white">50+</p>
-                <p className="text-white/50 text-xs">Matches</p>
+                <p className="text-xl font-bold text-white">Free</p>
+                <p className="text-white/50 text-xs">To join</p>
               </div>
             </div>
           </motion.div>

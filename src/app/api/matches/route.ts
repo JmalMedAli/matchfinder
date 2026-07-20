@@ -21,7 +21,13 @@ export async function GET(req: NextRequest) {
     query = query.eq("status", status);
   }
   if (search) {
-    query = query.or(`title.ilike.%${search}%,location.ilike.%${search}%`);
+    // Strip characters that are structurally significant to a PostgREST
+    // .or(...) filter string (comma separates conditions, parens group them)
+    // so user input can't break out of the intended ilike conditions.
+    const safeSearch = search.replace(/[,()]/g, "");
+    if (safeSearch) {
+      query = query.or(`title.ilike.%${safeSearch}%,location.ilike.%${safeSearch}%`);
+    }
   }
 
   const { data: matches, count, error } = await query;

@@ -78,7 +78,10 @@ export default function FieldsPage() {
         });
       }
       if (dayFilter === "This weekend") {
-        result = result.filter((f) => f.match_count > 0);
+        result = result.filter((f) => {
+          if (!f.opening_hours) return true;
+          return f.opening_hours["saturday"] != null || f.opening_hours["sunday"] != null;
+        });
       }
     }
 

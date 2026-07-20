@@ -20,6 +20,7 @@ export interface Profile {
   avg_rating: number;
   completion_rate: number;
   created_at: string;
+  role: string | null;
 }
 
 export interface ProfileUpdate {
@@ -73,6 +74,7 @@ export const PROFILE_FIELDS = [
   "avg_rating",
   "completion_rate",
   "created_at",
+  "role",
 ] as const;
 
 export type PublicProfile = Pick<

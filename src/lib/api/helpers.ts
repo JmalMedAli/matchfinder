@@ -34,6 +34,23 @@ export async function requireAuth(): Promise<AuthResult> {
   return { supabase, user, error: null };
 }
 
+/**
+ * Guard for src/app/api/cron/**. These routes have no user session (real cron
+ * callers, e.g. Vercel Cron, hit them with no cookies), so authorization can't
+ * go through requireAuth/RLS — it's a shared secret instead. Returns null when
+ * the request is authorized, or the 401 response to return otherwise.
+ */
+export function requireCronSecret(req: Request): NextResponse | null {
+  const secret = process.env.CRON_SECRET;
+  if (!secret) return jsonError("Cron endpoint not configured", 500);
+
+  const header = req.headers.get("authorization");
+  if (header !== `Bearer ${secret}`) {
+    return jsonError("Unauthorized", 401);
+  }
+  return null;
+}
+
 type ParsedBody<T> = { body: T; error: null } | { body: null; error: NextResponse };
 
 /** Safe `req.json()`. `message` preserves each route's original error string. */

@@ -8,7 +8,7 @@ export async function POST(req: Request) {
   const { supabase, user, error: authError } = await requireAuth();
   if (authError) return authError;
 
-  if (!rateLimit(`push-subscribe:${user.id}`, { maxRequests: 5, windowMs: 60_000 })) {
+  if (!(await rateLimit(supabase, "push-subscribe"))) {
     return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   }
 

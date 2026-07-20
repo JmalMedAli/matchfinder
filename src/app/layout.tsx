@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Barlow, Barlow_Condensed } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
 import { QueryProvider } from "@/components/query-provider";
@@ -21,6 +21,18 @@ const barlowCondensed = Barlow_Condensed({
 export const metadata: Metadata = {
   title: "MatchFinder — Find Your Next Match",
   description: "Connect with football match organizers and players near you",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "MatchFinder",
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#16a34a" },
+    { media: "(prefers-color-scheme: dark)", color: "#0a0e14" },
+  ],
 };
 
 export default function RootLayout({

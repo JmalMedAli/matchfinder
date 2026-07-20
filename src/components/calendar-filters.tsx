@@ -5,14 +5,13 @@ import { motion, AnimatePresence } from "framer-motion";
 import { SlidersHorizontal, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-export type CalendarFilter = "all" | "my_matches" | "organized" | "pending" | "nearby";
+export type CalendarFilter = "all" | "my_matches" | "organized" | "pending";
 
 const FILTERS: { value: CalendarFilter; label: string }[] = [
   { value: "all", label: "All Matches" },
   { value: "my_matches", label: "My Matches" },
   { value: "organized", label: "Organized by Me" },
   { value: "pending", label: "Pending" },
-  { value: "nearby", label: "Nearby" },
 ];
 
 interface CalendarFiltersProps {

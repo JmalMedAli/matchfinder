@@ -1,19 +1,17 @@
-const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
+import type { createClient } from "@/lib/supabase/server";
 
-export function rateLimit(
-  key: string,
-  { maxRequests = 10, windowMs = 60_000 }: { maxRequests?: number; windowMs?: number } = {},
-): boolean {
-  const now = Date.now();
-  const entry = rateLimitMap.get(key);
+type SupabaseServerClient = Awaited<ReturnType<typeof createClient>>;
 
-  if (!entry || now > entry.resetAt) {
-    rateLimitMap.set(key, { count: 1, resetAt: now + windowMs });
-    return true;
-  }
-
-  if (entry.count >= maxRequests) return false;
-
-  entry.count++;
-  return true;
+/**
+ * Durable, per-user rate limit backed by the `check_rate_limit` RPC
+ * (see supabase/migration-admin-panel-security-hardening.sql). The RPC
+ * derives the bucket key from the caller's own auth.uid() and looks up the
+ * request/window threshold from `rate_limit_policies` server-side — `scope`
+ * only selects which configured policy applies, it can't be used to target
+ * another user's bucket or override the configured limit.
+ */
+export async function rateLimit(supabase: SupabaseServerClient, scope: string): Promise<boolean> {
+  const { data, error } = await supabase.rpc("check_rate_limit", { p_scope: scope });
+  if (error) return false;
+  return data === true;
 }

@@ -8,6 +8,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { CheckCircle, Hourglass, XCircle, Calendar, MapPin, ChevronRight, List } from "lucide-react";
 import { motion } from "framer-motion";
+import { EmptyState } from "@/components/ui/empty-state";
+import { ErrorState } from "@/components/ui/error-state";
 
 const requestStatusConfig: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline"; icon: typeof CheckCircle }> = {
   PENDING: { label: "Pending", variant: "secondary", icon: Hourglass },
@@ -16,7 +18,7 @@ const requestStatusConfig: Record<string, { label: string; variant: "default" | 
 };
 
 export default function MyMatchesPage() {
-  const { data: requests, isPending } = useJoinRequests();
+  const { data: requests, isPending, error, refetch } = useJoinRequests();
   const withdrawRequest = useWithdrawJoinRequest();
 
   if (isPending) {
@@ -27,6 +29,10 @@ export default function MyMatchesPage() {
         ))}
       </div>
     );
+  }
+
+  if (error) {
+    return <ErrorState description="Failed to load your matches." onRetry={() => refetch()} />;
   }
 
   const accepted = requests?.filter((r) => r.status === "ACCEPTED") ?? [];
@@ -140,35 +146,46 @@ export default function MyMatchesPage() {
         </h1>
       </div>
 
-      <section className="space-y-2.5">
-        <h2 className="text-xs font-semibold text-primary uppercase tracking-wider px-1 flex items-center gap-1.5">
-          <CheckCircle className="h-3.5 w-3.5" />
-          Accepted
-          {accepted.length > 0 && (
-            <span className="text-[10px] bg-primary/10 px-1.5 py-0.5 rounded-full">{accepted.length}</span>
-          )}
-        </h2>
-        {renderList(sortedAccepted)}
-      </section>
+      {!requests?.length ? (
+        <EmptyState
+          icon={List}
+          title="No matches yet"
+          description="Requests you send to join a match will show up here."
+          action={{ label: "Browse matches", href: "/dashboard/matches" }}
+        />
+      ) : (
+        <>
+          <section className="space-y-2.5">
+            <h2 className="text-xs font-semibold text-primary uppercase tracking-wider px-1 flex items-center gap-1.5">
+              <CheckCircle className="h-3.5 w-3.5" />
+              Accepted
+              {accepted.length > 0 && (
+                <span className="text-[10px] bg-primary/10 px-1.5 py-0.5 rounded-full">{accepted.length}</span>
+              )}
+            </h2>
+            {renderList(sortedAccepted)}
+          </section>
 
-      <section className="space-y-2.5">
-        <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-1 flex items-center gap-1.5">
-          <Hourglass className="h-3.5 w-3.5" />
-          Pending
-          {pending.length > 0 && (
-            <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded-full">{pending.length}</span>
-          )}
-        </h2>
-        {renderList(sortedPending, true)}
-      </section>
+          <section className="space-y-2.5">
+            <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-1 flex items-center gap-1.5">
+              <Hourglass className="h-3.5 w-3.5" />
+              Pending
+              {pending.length > 0 && (
+                <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded-full">{pending.length}</span>
+              )}
+            </h2>
+            {renderList(sortedPending, true)}
+          </section>
 
-      <section className="space-y-2.5">
-        <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-1 flex items-center gap-1.5">
-          <XCircle className="h-3.5 w-3.5" />
-          Rejected
-        </h2>
-        {renderList(sortedRejected)}
-      </section>
+          <section className="space-y-2.5">
+            <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-1 flex items-center gap-1.5">
+              <XCircle className="h-3.5 w-3.5" />
+              Rejected
+            </h2>
+            {renderList(sortedRejected)}
+          </section>
+        </>
+      )}
     </motion.div>
   );
 }

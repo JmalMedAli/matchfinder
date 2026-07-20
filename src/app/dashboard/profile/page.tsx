@@ -18,30 +18,32 @@ import { PlayerSearch } from "@/components/player-search";
 import { PlayerAchievements } from "@/components/player-achievements";
 import { NotificationPreferences } from "@/components/notification-preferences";
 
-const menuSections = [
-  {
-    title: "Matches",
-    items: [
-      { href: "/dashboard/my-matches", label: "My Matches", icon: List, description: "Matches you joined" },
-      { href: "/dashboard/my-matches", label: "Organizing", icon: Shield, description: "Matches you created" },
-      { href: "/dashboard/archived", label: "Archived Matches", icon: Archive, description: "Hidden matches" },
-      { href: "/dashboard/notifications", label: "Notifications", icon: Bell, description: "Alerts and updates" },
-    ],
-  },
-  {
-    title: "Account",
-    items: [
-      { href: "/dashboard/profile/edit", label: "Edit Profile", icon: Pencil, description: "Name, photo, bio" },
-      { href: "/dashboard/admin", label: "Admin Panel", icon: Shield, description: "Manage the platform" },
-    ],
-  },
-  {
-    title: "Support",
-    items: [
-      { href: "#", label: "Help & Support", icon: HelpCircle, description: "Get assistance" },
-    ],
-  },
-];
+function getMenuSections(isAdmin: boolean) {
+  return [
+    {
+      title: "Matches",
+      items: [
+        { href: "/dashboard/my-matches", label: "My Matches", icon: List, description: "Matches you joined" },
+        { href: "/dashboard/my-matches", label: "Organizing", icon: Shield, description: "Matches you created" },
+        { href: "/dashboard/archived", label: "Archived Matches", icon: Archive, description: "Hidden matches" },
+        { href: "/dashboard/notifications", label: "Notifications", icon: Bell, description: "Alerts and updates" },
+      ],
+    },
+    {
+      title: "Account",
+      items: [
+        { href: "/dashboard/profile/edit", label: "Edit Profile", icon: Pencil, description: "Name, photo, bio" },
+        ...(isAdmin ? [{ href: "/dashboard/admin", label: "Admin Panel", icon: Shield, description: "Manage the platform" }] : []),
+      ],
+    },
+    {
+      title: "Support",
+      items: [
+        { href: "#", label: "Help & Support", icon: HelpCircle, description: "Get assistance" },
+      ],
+    },
+  ];
+}
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -49,6 +51,7 @@ export default function ProfilePage() {
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
+  const menuSections = getMenuSections(profile?.role === "admin");
 
   async function handleSignOut() {
     try {

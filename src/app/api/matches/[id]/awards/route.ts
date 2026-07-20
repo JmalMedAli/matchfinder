@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { requireAuth } from "@/lib/api/helpers";
+import { notifyUser } from "@/lib/notify";
 
 export const dynamic = "force-dynamic";
 
@@ -52,6 +53,9 @@ export async function POST(
   if (!recipientId || !awardType) {
     return NextResponse.json({ error: "Missing recipientId or awardType" }, { status: 400 });
   }
+  if (recipientId === user.id) {
+    return NextResponse.json({ error: "Cannot vote for yourself" }, { status: 400 });
+  }
 
   const { data, error } = await supabase
     .from("match_awards")
@@ -92,14 +96,35 @@ export async function POST(
 
   if (winner && (count ?? 0) > 0 && maxVotes >= Math.ceil((count ?? 0) / 2)) {
     const updateField = awardType === "man_of_match" ? "motm_player_id" : "fair_play_player_id";
-    await supabase.from("matches").update({ [updateField]: winner }).eq("id", id);
 
-    // Update profile stats
-    if (awardType === "man_of_match") {
-      const { data: profile } = await supabase.from("profiles").select("motm_awards").eq("id", winner).single();
-      if (profile) {
-        await supabase.from("profiles").update({ motm_awards: (profile.motm_awards ?? 0) + 1 }).eq("id", winner);
+    const { data: match } = await supabase
+      .from("matches")
+      .select("title, motm_player_id, fair_play_player_id")
+      .eq("id", id)
+      .single();
+
+    const currentWinner = awardType === "man_of_match" ? match?.motm_player_id : match?.fair_play_player_id;
+
+    // Only act the moment the winner first crosses the threshold (or
+    // changes) - otherwise every later vote would re-increment the
+    // profile stat and re-notify the same winner.
+    if (match && winner !== currentWinner) {
+      await supabase.from("matches").update({ [updateField]: winner }).eq("id", id);
+
+      if (awardType === "man_of_match") {
+        const { data: profile } = await supabase.from("profiles").select("motm_awards").eq("id", winner).single();
+        if (profile) {
+          await supabase.from("profiles").update({ motm_awards: (profile.motm_awards ?? 0) + 1 }).eq("id", winner);
+        }
       }
+
+      await notifyUser({
+        userId: winner,
+        title: awardType === "man_of_match" ? "You were voted Man of the Match!" : "You were voted Fair Play!",
+        message: `Your teammates voted you ${awardType === "man_of_match" ? "Man of the Match" : "Fair Play"} for "${match.title}".`,
+        matchId: id,
+        skipEmail: true,
+      });
     }
   }
 

@@ -6,6 +6,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { MapPin, Star, Calendar, Trophy } from "lucide-react";
 import { motion } from "framer-motion";
+import { ReportDialog } from "@/components/admin/report-dialog";
+import { BlockButton } from "@/components/block-button";
 
 async function fetchPlayerStats(id: string) {
   const res = await fetch(`/api/players/${id}/stats`);
@@ -41,6 +43,10 @@ export default function PublicPlayerPage({ params }: { params: Promise<{ id: str
           <h1 className="text-2xl font-bold font-[family-name:var(--font-barlow-condensed)] mt-3">{stats.name ?? "Player"}</h1>
           {stats.position && <p className="text-sm text-muted-foreground">{stats.position}</p>}
           {stats.city && <p className="text-xs text-muted-foreground/70 flex items-center gap-1 mt-1"><MapPin className="h-3 w-3" />{stats.city}</p>}
+          <div className="flex items-center gap-1">
+            <ReportDialog targetType="user" targetId={id} triggerLabel="Report player" />
+            <BlockButton userId={id} userName={stats.name} />
+          </div>
         </div>
       </div>
 

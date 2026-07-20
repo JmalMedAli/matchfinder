@@ -19,8 +19,9 @@ const desktopNavItems = [
   { href: "/dashboard/conversations", label: "Conversations", icon: MessageCircle },
   { href: "/dashboard/notifications", label: "Notifications", icon: Bell },
   { href: "/dashboard/profile", label: "My Profile", icon: User },
-  { href: "/dashboard/admin", label: "Admin", icon: Shield },
 ];
+
+const adminNavItem = { href: "/dashboard/admin", label: "Admin", icon: Shield };
 
 function useNavData(onUnreadCountChange?: (count: number) => void) {
   const [userName, setUserName] = useState<string | null>(null);
@@ -28,6 +29,7 @@ function useNavData(onUnreadCountChange?: (count: number) => void) {
   const [userImage, setUserImage] = useState<string | null>(null);
   const [unreadCount, setUnreadCount] = useState(0);
   const [chatUnreadCount, setChatUnreadCount] = useState(0);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -37,12 +39,13 @@ function useNavData(onUnreadCountChange?: (count: number) => void) {
         setUserEmail(data.user.email ?? "");
         const { data: profile } = await supabase
           .from("profiles")
-          .select("name, image")
+          .select("name, image, role")
           .eq("id", data.user.id)
           .single();
         if (profile) {
           setUserName(profile.name ?? data.user.email ?? "User");
           setUserImage(profile.image);
+          setIsAdmin(profile.role === "admin" || profile.role === "moderator");
         } else {
           setUserName(data.user.email ?? "User");
         }
@@ -67,7 +70,10 @@ function useNavData(onUnreadCountChange?: (count: number) => void) {
     }
   }, [onUnreadCountChange]);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    const handle = setTimeout(load, 0);
+    return () => clearTimeout(handle);
+  }, [load]);
 
   useEffect(() => {
     function onVisible() {
@@ -77,7 +83,7 @@ function useNavData(onUnreadCountChange?: (count: number) => void) {
     return () => document.removeEventListener("visibilitychange", onVisible);
   }, [load]);
 
-  return { userName, userEmail, userImage, unreadCount, chatUnreadCount, reload: load };
+  return { userName, userEmail, userImage, unreadCount, chatUnreadCount, isAdmin, reload: load };
 }
 
 /* ═══════════════════════════════════════════
@@ -139,7 +145,8 @@ export function NavSidebar({
 }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { userName, userEmail, userImage, unreadCount, chatUnreadCount } = useNavData(onUnreadCountChange);
+  const { userName, userEmail, userImage, unreadCount, chatUnreadCount, isAdmin } = useNavData(onUnreadCountChange);
+  const navItems = isAdmin ? [...desktopNavItems, adminNavItem] : desktopNavItems;
 
   useEffect(() => {
     if (unreadVersion && unreadVersion > 0) {
@@ -166,7 +173,7 @@ export function NavSidebar({
         </Link>
       </div>
       <nav className="flex flex-col gap-1 p-4">
-        {desktopNavItems.map((item, i) => {
+        {navItems.map((item, i) => {
           const Icon = item.icon;
           const active =
             item.href === "/dashboard"

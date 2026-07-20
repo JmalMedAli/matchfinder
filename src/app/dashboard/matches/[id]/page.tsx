@@ -7,6 +7,7 @@ import { useMatch, useDeleteMatch, useUpdateMatch } from "@/hooks/use-matches";
 import { useJoinRequest, useJoinRequests, useUpdateJoinRequest, useWithdrawJoinRequest, useRemoveAcceptedPlayer } from "@/hooks/use-join-requests";
 import { useRealtimeJoinRequests } from "@/hooks/use-realtime-join-requests";
 import { useMatchReviews, useSubmitReview } from "@/hooks/use-reviews";
+import { useMyMatchReview } from "@/hooks/use-match-review";
 import { useMatchPhotos } from "@/hooks/use-match-photos";
 import type { MatchPhoto } from "@/hooks/use-match-photos";
 import { PhotoGallery } from "@/components/photo-gallery";
@@ -29,6 +30,7 @@ import { PostMatchReview } from "@/components/post-match-review";
 import { MatchAwards } from "@/components/match-awards";
 import { MatchCheckin } from "@/components/match-checkin";
 import { FavoriteButton } from "@/components/favorite-button";
+import { ReportDialog } from "@/components/admin/report-dialog";
 import { useMutation } from "@tanstack/react-query";
 import {
   MapPin, ExternalLink, Phone, MessageCircle, Globe,
@@ -138,6 +140,7 @@ export default function MatchDetailPage({
   useRealtimeJoinRequests({ matchId: id });
   const { data: field } = useFootballField(match?.football_field_id ?? null);
   const { data: matchReviews } = useMatchReviews(id);
+  const { data: myMatchReview } = useMyMatchReview(id);
   const submitReview = useSubmitReview();
   const { data: photos, isPending: photosPending } = useMatchPhotos(id);
   const { data: availability } = useMatchAvailability(id);
@@ -323,6 +326,12 @@ export default function MatchDetailPage({
           )}
         </div>
       </motion.div>
+
+      {!isOrganizer && (
+        <div className="flex justify-end px-4 pt-2">
+          <ReportDialog targetType="match" targetId={id} />
+        </div>
+      )}
 
       {/* ── Stats Bar ── */}
       <motion.div
@@ -545,7 +554,7 @@ export default function MatchDetailPage({
         )}
 
         {/* Post-Match Review Prompt */}
-        {match.status === "COMPLETED" && userId && !matchReviews?.some((r) => r.reviewer_id === userId) && (
+        {match.status === "COMPLETED" && userId && !myMatchReview && (
           <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.35 }}>
             <PostMatchReviewPrompt
               matchTitle={match.title}
@@ -560,7 +569,7 @@ export default function MatchDetailPage({
           <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.38 }}>
             <CollapsibleSection title="Rate Players" icon={<Star className="h-4 w-4 text-amber-500" />} defaultOpen={false}>
               <div className="space-y-3">
-                {acceptedPlayers.map((req: any, i: number) => {
+                {acceptedPlayers.filter((req: any) => req.player_id !== userId).map((req: any, i: number) => {
                   const existingReview = matchReviews?.find((r) => r.reviewer_id === userId && r.player_id === req.player_id);
                   return (
                     <ReviewCard key={req.player_id} player={req.profiles} playerId={req.player_id} matchId={id} existingReview={existingReview} onSubmit={(rating, comment) => { submitReview.mutate({ matchId: id, playerId: req.player_id, rating, comment }, { onSuccess: () => toast.success("Review submitted"), onError: (err) => toast.error(err.message) }); }} isPending={submitReview.isPending} index={i} />
@@ -737,6 +746,7 @@ export default function MatchDetailPage({
             image: r.profiles?.image ?? null,
           }))}
           currentUserId={userId}
+          isOrganizer={isOrganizer}
           onComplete={() => setShowPostReview(false)}
           onSkip={() => setShowPostReview(false)}
         />

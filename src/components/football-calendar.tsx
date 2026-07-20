@@ -4,6 +4,7 @@ import { useState, useMemo, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useCalendarMatches, type CalendarMatch } from "@/hooks/use-calendar-matches";
 import { DayDetailSheet } from "@/components/day-detail-sheet";
+import { CalendarFilters, type CalendarFilter } from "@/components/calendar-filters";
 import { ChevronLeft, ChevronRight, CalendarDays } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -41,6 +42,7 @@ export function FootballCalendar({ userId }: FootballCalendarProps) {
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [direction, setDirection] = useState(0);
+  const [filter, setFilter] = useState<CalendarFilter>("all");
 
   // Calculate date range for API (fetch full visible range)
   const dateRange = useMemo(() => {
@@ -59,16 +61,27 @@ export function FootballCalendar({ userId }: FootballCalendarProps) {
 
   const { data: matches, isPending } = useCalendarMatches(dateRange.from, dateRange.to);
 
+  const filteredMatches = useMemo(() => {
+    if (!matches || filter === "all") return matches ?? [];
+    if (filter === "my_matches") {
+      return matches.filter((m) => m.user_relation === "organizer" || m.user_relation === "joined" || m.user_relation === "pending");
+    }
+    if (filter === "organized") {
+      return matches.filter((m) => m.user_relation === "organizer");
+    }
+    return matches.filter((m) => m.user_relation === "pending");
+  }, [matches, filter]);
+
   // Group matches by date
   const matchesByDate = useMemo(() => {
     const map: Record<string, CalendarMatch[]> = {};
-    for (const match of matches ?? []) {
+    for (const match of filteredMatches) {
       const dateKey = match.date.slice(0, 10);
       if (!map[dateKey]) map[dateKey] = [];
       map[dateKey].push(match);
     }
     return map;
-  }, [matches]);
+  }, [filteredMatches]);
 
   const goToPrevMonth = useCallback(() => {
     setDirection(-1);
@@ -177,6 +190,11 @@ export function FootballCalendar({ userId }: FootballCalendarProps) {
               <ChevronRight className="h-4 w-4" />
             </button>
           </div>
+        </div>
+
+        {/* Filters */}
+        <div className="px-4 pb-2">
+          <CalendarFilters value={filter} onChange={setFilter} />
         </div>
 
         {/* Weekday headers */}
